@@ -1,0 +1,13 @@
+#wp-admin-bar-cceverywhere_adminbar_btn a {
+    text-decoration: none !important;
+}
+#wp-admin-bar-cceverywhere_adminbar_btn .ab-icon {
+    height: 5px;
+    width: 13px;
+    margin-top: 2px;
+    margin-right: 10px !important;
+    text-decoration: none !important;
+}
+#wp-admin-bar-cceverywhere_adminbar_btn .ab-icon:before {
+    font-size: 20px;
+}

@@ -1,0 +1,25 @@
+h2 { 
+    margin: 3rem 0 1rem 0; 
+}
+.description {
+    display: inline-block;
+    background: white;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid #c3c4c7;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
+}
+
+/* Style for the button */
+.cce-clear-cache-btn {
+    min-width: 200px;
+    text-align: center;
+}
+
+/* Style for the message */
+.cce-clear-cache-message {
+    display: block;
+    width: fit-content;
+    margin: 10px 0 0 0 !important;
+    padding: 7px 12px;
+}
