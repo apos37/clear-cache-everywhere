@@ -4,7 +4,7 @@ Tags: cache, clear cache, flush cache, performance, admin bar
 Requires at least: 5.9
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.0.2.1
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.txt
 
@@ -67,7 +67,7 @@ This plugin is ideal for developers, content managers, and site owners who need 
 It flushes WordPress object cache, transients, sessions, rewrite rules, and any configured third-party caches. If a hosting cache purge URL is set, it will be called as well. Additionally, it forces browsers to reload fresh content.
 
 = Does this work with all hosting providers? =
-This depends on your hosting provider. If they offer a cache purge URL, you can configure it in the plugin settings.
+This depends on your hosting provider. If they offer a cache purge URL, you can configure it in the plugin settings. For example, if you have GoDaddy's Website Security and Backups, you can navigate to Firewall > Settings > Performance > Clear Cache, then grab the Clear Cache API link.
 
 = Will this force browsers to load fresh content? =
 Yes! The plugin sends cache-control headers to prompt browsers to reload updated content.
@@ -106,18 +106,24 @@ add_filter( 'cceverywhere_custom_settings', function( $fields ) {
 ?>`
 
 = Is there a function to trigger clearing cache everywhere? =
-Yes! A helper function a available for you to use: `cceverywhere_clear_all( $log_results = false )`. 
+Yes! A helper function is available for you to use: `cceverywhere_clear_all( $log_results = false )`. 
 
 The function returns the results of the cache clearing processing. Optionally, you can log the results by setting the `$log_results` parameter to `true`. This will log the results to the debug log.
 
 = Where can I request features and get further support? =
-Join my [Discord support server](https://discord.gg/3HnzNEJVnR)
+We recommend using our [website support forum](https://pluginrx.com/support/plugin/clear-cache-everywhere/) as the primary method for requesting features and getting help. You can also reach out via our [Discord support server](https://discord.gg/3HnzNEJVnR) or the [WordPress.org support forum](https://wordpress.org/support/plugin/clear-cache-everywhere/), but please note that WordPress.org doesn’t always notify us of new posts, so it’s not ideal for time-sensitive issues.
+
+== Demo ==
+https://youtu.be/61dk4iydfDA
 
 == Screenshots ==
 
 1. Settings page and admin bar button.
 
 == Changelog ==
+
+= 1.1.0 =
+* Update: New support links
 
 = 1.0.2.1 =
 * Fix: Sanitized cookie names

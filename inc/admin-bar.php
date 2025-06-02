@@ -77,7 +77,7 @@ class AdminBar {
                 ]
             ] );
         }
-    }
+    } // End add_admin_bar_button()
 
 
     /**

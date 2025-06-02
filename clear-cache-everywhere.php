@@ -1,15 +1,15 @@
 <?php
 /**
  * Plugin Name:         Clear Cache Everywhere
- * Plugin URI:          https://github.com/apos37/clear-cache-everywhere
+ * Plugin URI:          https://pluginrx.com/plugin/clear-cache-everywhere/
  * Description:         Instantly clear all cache sources including WP cache, hosting cache, transients, sessions, and browser cache.
- * Version:             1.0.2.1
+ * Version:             1.1.0
  * Requires at least:   5.9
  * Tested up to:        6.8
  * Requires PHP:        7.4
  * Author:              PluginRx
  * Author URI:          https://pluginrx.com/
- * Support URI:         https://discord.gg/3HnzNEJVnR
+ * Discord URI:         https://discord.gg/3HnzNEJVnR
  * Text Domain:         clear-cache-everywhere
  * License:             GPLv2 or later
  * License URI:         http://www.gnu.org/licenses/gpl-2.0.txt
@@ -40,7 +40,7 @@ $plugin_data = get_file_data( __FILE__, [
     'textdomain'   => 'Text Domain',
     'author'       => 'Author',
     'author_uri'   => 'Author URI',
-    'support_uri'  => 'Support URI',
+    'discord_uri'  => 'Discord URI'
 ] );
 
 // Versions
@@ -55,7 +55,10 @@ define( 'CCEVERYWHERE__TEXTDOMAIN', str_replace( '-', '_', CCEVERYWHERE_TEXTDOMA
 define( 'CCEVERYWHERE_AUTHOR', $plugin_data[ 'author' ] );
 define( 'CCEVERYWHERE_AUTHOR_URI', $plugin_data[ 'author_uri' ] );
 define( 'CCEVERYWHERE_PLUGIN_URI', $plugin_data[ 'plugin_uri' ] );
-define( 'CCEVERYWHERE_DISCORD_SUPPORT_URL', $plugin_data[ 'support_uri' ] );
+define( 'CCEVERYWHERE_GUIDE_URL', CCEVERYWHERE_AUTHOR_URI . 'guide/plugin/' . CCEVERYWHERE_TEXTDOMAIN . '/' );
+define( 'CCEVERYWHERE_DOCS_URL', CCEVERYWHERE_AUTHOR_URI . 'docs/plugin/' . CCEVERYWHERE_TEXTDOMAIN . '/' );
+define( 'CCEVERYWHERE_SUPPORT_URL', CCEVERYWHERE_AUTHOR_URI . 'support/plugin/' . CCEVERYWHERE_TEXTDOMAIN . '/' );
+define( 'CCEVERYWHERE_DISCORD_URL', $plugin_data[ 'discord_uri' ] );
 
 // Paths
 define( 'CCEVERYWHERE_BASENAME', plugin_basename( __FILE__ ) );                                               //: text-domain/text-domain.php

@@ -245,10 +245,8 @@ class Clear {
             }
 
             if ( get_option( $prefix . 'litespeed_cache', true ) && is_plugin_active( 'litespeed-cache/litespeed-cache.php' ) ) {
-                if ( function_exists( 'do_action' ) ) {
-                    do_action( 'litespeed_purge_all' );
-                    $results[ 'litespeed_cache' ][ 'result' ] = 'success';
-                }
+                do_action( 'litespeed_purge_all' );
+                $results[ 'litespeed_cache' ][ 'result' ] = 'success';
             }
 
             if ( get_option( $prefix . 'sg_optimizer', true ) && is_plugin_active( 'sg-cachepress/sg-cachepress.php' ) ) {

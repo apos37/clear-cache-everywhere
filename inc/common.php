@@ -34,6 +34,9 @@ class Common {
 
         // PHP Version check
 		$this->check_php_version();
+
+		// Add links to the website and discord
+        add_filter( 'plugin_row_meta', [ $this, 'plugin_row_meta' ], 10, 2 );
         
     } // End __construct()
 
@@ -61,5 +64,54 @@ class Common {
 			return;
 		}
 	} // End check_php_version()
+
+
+	/**
+     * Add links to the website and discord
+     *
+     * @param array $links
+     * @return array
+     */
+    public function plugin_row_meta( $links, $file ) {
+        $text_domain = CCEVERYWHERE_TEXTDOMAIN;
+        if ( $text_domain . '/' . $text_domain . '.php' == $file ) {
+
+            $guide_url = CCEVERYWHERE_GUIDE_URL;
+            $docs_url = CCEVERYWHERE_DOCS_URL;
+            $support_url = CCEVERYWHERE_SUPPORT_URL;
+            $plugin_name = CCEVERYWHERE_NAME;
+
+            $our_links = [
+                'guide' => [
+                    // translators: Link label for the plugin's user-facing guide.
+                    'label' => __( 'How-To Guide', 'clear-cache-everywhere' ),
+                    'url'   => $guide_url
+                ],
+                'docs' => [
+                    // translators: Link label for the plugin's developer documentation.
+                    'label' => __( 'Developer Docs', 'clear-cache-everywhere' ),
+                    'url'   => $docs_url
+                ],
+                'support' => [
+                    // translators: Link label for the plugin's support page.
+                    'label' => __( 'Support', 'clear-cache-everywhere' ),
+                    'url'   => $support_url
+                ],
+            ];
+
+            $row_meta = [];
+            foreach ( $our_links as $key => $link ) {
+                // translators: %1$s is the link label, %2$s is the plugin name.
+                $aria_label = sprintf( __( '%1$s for %2$s', 'clear-cache-everywhere' ), $link[ 'label' ], $plugin_name );
+                $row_meta[ $key ] = '<a href="' . esc_url( $link[ 'url' ] ) . '" target="_blank" aria-label="' . esc_attr( $aria_label ) . '">' . esc_html( $link[ 'label' ] ) . '</a>';
+            }
+
+            // Add the links
+            return array_merge( $links, $row_meta );
+        }
+
+        // Return the links
+        return (array) $links;
+    } // End plugin_row_meta()
 
 }
