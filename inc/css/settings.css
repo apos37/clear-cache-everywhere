@@ -1,6 +1,15 @@
-h2 { 
-    margin: 3rem 0 1rem 0; 
+.wrap h2 {
+    margin-top: 3rem !important;
+    margin: 3rem 0 1rem 0 !important;
 }
+
+.form-table td {
+    margin-bottom: 9px;
+    padding: 15px 10px;
+    line-height: 1.3;
+    vertical-align: top;
+}
+
 .description {
     display: inline-block;
     background: white;
@@ -10,16 +19,109 @@ h2 {
     box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
 }
 
-/* Style for the button */
 .cce-clear-cache-btn {
     min-width: 200px;
     text-align: center;
 }
 
-/* Style for the message */
-.cce-clear-cache-message {
-    display: block;
+#cce-clear-cache-result {
+    border: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+    padding: 1rem;
+    margin-top: 1rem;
+    border-radius: 0.25rem;
+    max-height: 400px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 0.95rem;
+    line-height: 1.4;
     width: fit-content;
-    margin: 10px 0 0 0 !important;
-    padding: 7px 12px;
+}
+
+#cce-clear-cache-result p {
+    margin: 0 0 0.5rem 0;
+    margin-bottom: 0;
+    padding: 0.25rem 0;
+}
+
+/* Success text */
+#cce-clear-cache-result .text-success {
+    color: #28a745; /* Bootstrap green */
+    font-weight: 600;
+}
+
+/* Fail text */
+#cce-clear-cache-result .text-danger {
+    color: #dc3545; /* Bootstrap red */
+    font-weight: 600;
+}
+
+/* Container around checkbox + button */
+.cce-action-container {
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 2rem;
+}
+
+/* Run independently button */
+.cce-run-action-btn {
+    margin-top: 4px;
+    width: fit-content;
+}
+
+/* Individual result container */
+.cce-action-result {
+    margin-top: 4px;
+    font-size: 13px;
+    color: #444;
+    padding: 4px 6px;
+    border-left: 3px solid transparent;
+}
+
+/* Success/Fail colors */
+.cce-action-result.success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #28a745;
+}
+
+.cce-action-result.fail {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #dc3545;
+}
+
+.cce-action-result.skipped,
+.cce-action-result.info {
+    background-color: #cff4fc;
+    color: #055160;
+    border-color: #9eeaf9;
+}
+
+.cce-loading-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-left: 8px;
+    border: 2px solid #ccc;
+    border-top-color: #0073aa; /* WordPress admin blue or green for success */
+    border-radius: 50%;
+    animation: cce-spin 0.6s linear infinite;
+    vertical-align: middle;
+}
+
+@keyframes cce-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.cceverywhere_action_desc {
+    font-weight: normal;
+    font-size: 0.7rem;
+    opacity: 0.7;
+    font-style: italic;
+    display: block;
+    margin-top: 5px;
 }

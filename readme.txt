@@ -4,7 +4,7 @@ Tags: cache, clear cache, flush cache, performance, admin bar
 Requires at least: 5.9
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.txt
 
@@ -121,6 +121,18 @@ https://youtu.be/61dk4iydfDA
 1. Settings page and admin bar button.
 
 == Changelog ==
+
+= 1.2.0 =
+* Update: Added logging for how long it takes for each action
+* Update: Added animated border to admin bar while it's clearing cache
+* Update: Moved some actions to ajax while leaving sessions, cookies, and browser cache for page reloads
+* Update: Added descriptions to each action
+* Update: Added individual clear buttons to each action
+* Update: Removed notices, moved last results to settings page
+* Update: Added opcache_reset, varnish, redis_memcached, fragment_cache, and rest_api_cache
+
+= 1.1.1 =
+* Tweak: Update admin bar spacing
 
 = 1.1.0 =
 * Update: New support links

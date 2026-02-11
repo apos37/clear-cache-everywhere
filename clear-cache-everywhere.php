@@ -3,7 +3,7 @@
  * Plugin Name:         Clear Cache Everywhere
  * Plugin URI:          https://pluginrx.com/plugin/clear-cache-everywhere/
  * Description:         Instantly clear all cache sources including WP cache, hosting cache, transients, sessions, and browser cache.
- * Version:             1.1.0
+ * Version:             1.2.0
  * Requires at least:   5.9
  * Tested up to:        6.8
  * Requires PHP:        7.4
@@ -45,7 +45,7 @@ $plugin_data = get_file_data( __FILE__, [
 
 // Versions
 define( 'CCEVERYWHERE_VERSION', $plugin_data[ 'version' ] );
-define( 'CCEVERYWHERE_SCRIPT_VERSION', CCEVERYWHERE_VERSION );                                                // REPLACE WITH time() DURING TESTING
+define( 'CCEVERYWHERE_SCRIPT_VERSION', time() );                                                // REPLACE WITH time() DURING TESTING
 define( 'CCEVERYWHERE_MIN_PHP_VERSION', $plugin_data[ 'requires_php' ] );
 
 // Names
@@ -68,10 +68,9 @@ define( 'CCEVERYWHERE_INCLUDES_ABSPATH', CCEVERYWHERE_ABSPATH . 'inc/' );       
 define( 'CCEVERYWHERE_INCLUDES_DIR', CCEVERYWHERE_DIR . 'inc/' );                                             //: https://domain.com/wp-content/plugins/text-domain/includes/
 define( 'CCEVERYWHERE_JS_PATH', CCEVERYWHERE_INCLUDES_DIR . 'js/' );                                          //: https://domain.com/wp-content/plugins/text-domain/includes/js/
 define( 'CCEVERYWHERE_CSS_PATH', CCEVERYWHERE_INCLUDES_DIR . 'css/' );                                        //: https://domain.com/wp-content/plugins/text-domain/includes/css/
-define( 'CCEVERYWHERE_IMG_PATH', CCEVERYWHERE_INCLUDES_DIR . 'img/' );                                        //: https://domain.com/wp-content/plugins/text-domain/includes/img/
-define( 'CCEVERYWHERE_SETTINGS_PATH', admin_url( 'edit.php?post_type=cceverywhere-files&page=settings' ) );   //: https://domain.com/wp-admin/?page=text-domain
+define( 'CCEVERYWHERE_SETTINGS_PATH', admin_url( 'tools.php?page=clear_cache_everywhere' ) );
 
-// Screen IDs
+// Screen ID
 define( 'CCEVERYWHERE_SETTINGS_SCREEN_ID', 'tools_page_' . CCEVERYWHERE__TEXTDOMAIN );
 
 

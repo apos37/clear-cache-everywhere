@@ -86,7 +86,6 @@ class AdminBar {
      * @return void
      */
     public function enqueue_scripts() {
-        // CSS
-		wp_enqueue_style( CCEVERYWHERE_TEXTDOMAIN . '-styles', CCEVERYWHERE_CSS_PATH . 'admin-bar.css', [], CCEVERYWHERE_VERSION );
+		wp_enqueue_style( CCEVERYWHERE_TEXTDOMAIN . '-admin-bar', CCEVERYWHERE_CSS_PATH . 'admin-bar.css', [], CCEVERYWHERE_SCRIPT_VERSION );
     } // End enqueue_scripts()
 }

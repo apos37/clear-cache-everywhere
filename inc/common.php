@@ -67,7 +67,7 @@ class Common {
 
 
 	/**
-     * Add links to the website and discord
+     * Add links to plugin row
      *
      * @param array $links
      * @return array
