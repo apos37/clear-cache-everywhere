@@ -41,6 +41,11 @@ class AdminBar {
      * Load on init
      */
     public function init() {
+
+        // Allow developers to disable admin bar via filter
+        if ( apply_filters( 'cceverywhere_admin_bar_enabled', true ) === false ) {
+            return; // Skip admin bar entirely
+        }
         
         // Add admin bar menu button
 		add_action( 'admin_bar_menu', [ $this, 'add_admin_bar_button' ], 100 );

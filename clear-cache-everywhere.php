@@ -3,9 +3,9 @@
  * Plugin Name:         Clear Cache Everywhere
  * Plugin URI:          https://pluginrx.com/plugin/clear-cache-everywhere/
  * Description:         Instantly clear all cache sources including WP cache, hosting cache, transients, sessions, and browser cache.
- * Version:             1.2.0
+ * Version:             1.2.1
  * Requires at least:   5.9
- * Tested up to:        6.8
+ * Tested up to:        6.9
  * Requires PHP:        7.4
  * Author:              PluginRx
  * Author URI:          https://pluginrx.com/

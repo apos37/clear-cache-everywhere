@@ -75,7 +75,7 @@ class Clear {
 
 
     /**
-     * Clear all caches if the correct query parameters are present.
+     * Clear all caches if the correct query parameters are present or if forced.
      *
      * @param bool $force Optional. If true, forces cache clearing without checking query parameters. Default false.
      * @return array|null Returns an array of results if $force is true, otherwise null.
@@ -88,14 +88,7 @@ class Clear {
             return;
         }
 
-        /**
-         * Fires before cache clearing.
-         */
-        do_action( 'cceverywhere_before_clear_cache' );
-
-        /**
-         * Run each action
-         */
+        // Run each action
         $clearing_actions = $this->get_clearing_actions();
 
         foreach ( $clearing_actions as $action ) {
@@ -146,6 +139,10 @@ class Clear {
                 'error_message' => null
             ] );
 
+            // Before Hook
+            unset( $action[ 'run_context' ], $action[ 'enabled' ] );
+            do_action( 'cceverywhere_before_clear', $action );
+
             // Execute the callback with try/catch
             try {
                 $result = call_user_func( $callback );
@@ -163,16 +160,12 @@ class Clear {
                 'status'        => $status,
                 'error_message' => $error
             ] );
+
+            // After Hook
+            do_action( 'cceverywhere_after_clear', $action, $status, $error );
         }
 
-        /**
-         * Fires after cache clearing.
-         */
-        do_action( 'cceverywhere_after_clear_cache' );
-
-        /**
-         * If this was a page request, redirect to remove nonce/action
-         */
+        // If this was a page request, redirect to remove nonce/action
         if ( ! $force ) {
             wp_safe_redirect( remove_query_arg( [ $this->action_param, '_wpnonce' ] ) );
             exit;
@@ -472,9 +465,7 @@ class Clear {
             OR option_name LIKE '%api\_cache%'"
         );
 
-        do_action( 'cceverywhere_clear_rest_cache' );
-
-        if ( false !== $deleted || did_action( 'cceverywhere_clear_rest_cache' ) ) {
+        if ( false !== $deleted ) {
             return [ 'status' => 'success', 'error_message' => null ];
         }
 
@@ -502,6 +493,63 @@ class Clear {
 
         return [ 'status' => 'success', 'error_message' => null ];
     } // End clear_hosting_cache()
+
+
+    /**
+     * Clear Cloudflare cache via zone ID
+     *
+     * @return array
+     */
+    public function clear_cloudflare_cache() {
+        // Sanitize when retrieving from the database
+        $zone_id   = sanitize_text_field( get_option( CCEVERYWHERE__TEXTDOMAIN . '_cloudflare_zone_id' ) );
+
+        // For tokens/passwords, trim whitespace. 
+        // We avoid heavy sanitation here to prevent corrupting the key format.
+        $api_token = trim( get_option( CCEVERYWHERE__TEXTDOMAIN . '_cloudflare_api_token' ) );
+
+        // 1. Validation
+        if ( empty( $zone_id ) || empty( $api_token ) ) {
+            return [ 
+                'status' => 'skipped', 
+                'error_message' => 'Cloudflare Zone ID or API Token not configured.' 
+            ];
+        }
+
+        $url = "https://api.cloudflare.com/client/v4/zones/" . sanitize_text_field( $zone_id ) . "/purge_cache";
+
+        // 2. Prepare the Request
+        $args = [
+            'method'      => 'POST',
+            'blocking'    => true,
+            'headers'     => [
+                'Authorization' => 'Bearer ' . $api_token,
+                'Content-Type'  => 'application/json',
+            ],
+            'body'        => json_encode([
+                'purge_everything' => true 
+            ]),
+            'timeout'     => 45,
+        ];
+
+        // 3. Execute the Request
+        $response = wp_remote_post( $url, $args );
+
+        // 4. Handle Errors
+        if ( is_wp_error( $response ) ) {
+            return [ 'status' => 'fail', 'error_message' => $response->get_error_message() ];
+        }
+
+        $body = json_decode( wp_remote_retrieve_body( $response ), true );
+
+        // Cloudflare returns a 200 OK even if 'success' is false (with an error array)
+        if ( empty( $body[ 'success' ] ) ) {
+            $error = ! empty( $body[ 'errors' ][0][ 'message' ] ) ? $body[ 'errors' ][0][ 'message' ] : 'Unknown Cloudflare Error';
+            return [ 'status' => 'fail', 'error_message' => $error ];
+        }
+
+        return [ 'status' => 'success', 'error_message' => null ];
+    } // End clear_cloudflare_cache()
 
 
     /**
@@ -777,16 +825,6 @@ class Clear {
 
 
     /**
-     * Allow hook to show skipped notice
-     *
-     * @return boolean
-     */
-    public function show_skipped_notice() {
-        return filter_var( apply_filters( 'cceverywhere_show_skipped_notice', FALSE ), FILTER_VALIDATE_BOOLEAN );
-    } // End show_skipped_notice()
-
-
-    /**
      * Parse the results into separate arrays
      *
      * @param array $results
@@ -871,6 +909,10 @@ class Clear {
             'error_message' => null
         ] );
 
+        // Before Hook
+        unset( $action[ 'run_context' ], $action[ 'enabled' ] );
+        do_action( 'cceverywhere_before_clear', $action );
+
         // Execute
         try {
             $result = call_user_func( $callback );
@@ -889,6 +931,10 @@ class Clear {
             'error_message' => $error
         ] );
 
+        // After Hook
+        do_action( 'cceverywhere_after_clear', $action, $status, $error );
+
+        // Return result
         wp_send_json_success( [
             'key'           => $key,
             'status'        => $status,
@@ -955,6 +1001,10 @@ class Clear {
                 'error_message' => null
             ] );
 
+            // Before Hook
+            unset( $action[ 'run_context' ], $action[ 'enabled' ] );
+            do_action( 'cceverywhere_before_clear', $action );
+
             try {
                 $result = call_user_func( $callback );
                 $status = $result[ 'status' ] ?? 'fail';
@@ -970,6 +1020,9 @@ class Clear {
                 'status'        => $status,
                 'error_message' => $error
             ] );
+
+            // After Hook
+            do_action( 'cceverywhere_after_clear', $action, $status, $error );
 
             $results[ $key ] = [
                 'status'        => $status,
@@ -1039,6 +1092,10 @@ class Clear {
             'error_message' => null
         ] );
 
+        // Before Hook
+        unset( $action[ 'run_context' ], $action[ 'enabled' ] );
+        do_action( 'cceverywhere_before_clear', $action );
+
         // Execute
         try {
             $result = call_user_func( $callback );
@@ -1056,6 +1113,9 @@ class Clear {
             'status'        => $status,
             'error_message' => $error
         ] );
+
+        // After Hook
+        do_action( 'cceverywhere_after_clear', $action, $status, $error );
 
         wp_send_json_success( [
             'key'           => $key,

@@ -137,7 +137,7 @@ class Settings {
 
             <!-- Settings Form -->
             <br><br>
-            <h2><?php esc_html_e( 'Choose below which items you want to clear.', 'clear-cache-everywhere' ); ?></h2>
+            <h2><?php esc_html_e( 'Choose below which items you want to clear with the Clear Cache Now button and Admin Bar link.', 'clear-cache-everywhere' ); ?></h2>
 			<form method="post" action="options.php">
 				<?php
 					settings_fields( CCEVERYWHERE_TEXTDOMAIN );
@@ -199,7 +199,7 @@ class Settings {
                 'type'        => 'checkbox',
                 'sanitize'    => 'sanitize_checkbox',
                 'section'     => 'defaults',
-                'default'     => TRUE,
+                'default'     => FALSE,
                 'run_context' => 'ajax',
                 'comments'    => __( 'Resets PHP OPcache to clear cached scripts. May take a few seconds on large sites.', 'clear-cache-everywhere' ),
             ],
@@ -209,7 +209,7 @@ class Settings {
                 'type'        => 'checkbox',
                 'sanitize'    => 'sanitize_checkbox',
                 'section'     => 'defaults',
-                'default'     => TRUE,
+                'default'     => FALSE,
                 'run_context' => 'ajax',
                 'comments'    => __( 'Purges the Varnish cache if detected. Network requests may take a few seconds to propagate.', 'clear-cache-everywhere' ),
             ],
@@ -219,7 +219,7 @@ class Settings {
                 'type'        => 'checkbox',
                 'sanitize'    => 'sanitize_checkbox',
                 'section'     => 'defaults',
-                'default'     => TRUE,
+                'default'     => FALSE,
                 'run_context' => 'ajax',
                 'comments'    => __( 'Flushes Redis or Memcached object cache. Large caches may take several seconds.', 'clear-cache-everywhere' ),
             ],
@@ -249,7 +249,7 @@ class Settings {
                 'type'        => 'checkbox',
                 'sanitize'    => 'sanitize_checkbox',
                 'section'     => 'defaults',
-                'default'     => TRUE,
+                'default'     => FALSE,
                 'run_context' => 'page',
                 'comments'    => __( 'Clears active user sessions; users may need to log in again.', 'clear-cache-everywhere' ),
             ],
@@ -289,6 +289,32 @@ class Settings {
                 'type'     => 'text',
                 'sanitize' => 'sanitize_text_field',
                 'section'  => 'hosting',
+            ],
+            [
+                'key'         => 'cloudflare_cache',
+                'title'       => __( 'Cloudflare Cache', 'clear-cache-everywhere' ),
+                'type'        => 'checkbox',
+                'sanitize'    => 'sanitize_checkbox',
+                'section'     => 'hosting',
+                'default'     => FALSE,
+                'run_context' => 'ajax',
+                'comments'    => __( 'Clears caching handled by Cloudflare.', 'clear-cache-everywhere' ),
+            ],
+            [
+                'key'      => 'cloudflare_zone_id',
+                'title'    => __( 'Cloudflare Zone ID', 'clear-cache-everywhere' ),
+                'type'     => 'text',
+                'sanitize' => 'sanitize_text_field',
+                'section'  => 'hosting',
+                'comments' => __( 'Required to clear Cloudflare cache. Find this in your Cloudflare dashboard under Overview > API > Zone ID.', 'clear-cache-everywhere' ),
+            ],
+            [
+                'key'      => 'cloudflare_api_token',
+                'title'    => __( 'Cloudflare API Token', 'clear-cache-everywhere' ),
+                'type'     => 'password',
+                'sanitize' => 'sanitize_text_field',
+                'section'  => 'hosting',
+                'comments' => __( 'Required to clear Cloudflare cache. Find this in your Cloudflare dashboard under Overview > API > Get Your Token > Create a New Token with Permission: Zone, Cache Purge, Purge.', 'clear-cache-everywhere' ),
             ],
         ];
 
@@ -623,6 +649,32 @@ class Settings {
             wp_kses_post( $comments )
         );
     } // settings_field_text()
+
+
+    /**
+     * Custom callback function to print password field
+     *
+     * @param array $args
+     * @return void
+     */
+    public function settings_field_password( $args ) {
+        $width = isset( $args[ 'width' ] ) ? $args[ 'width' ] : '43rem';
+        $default = isset( $args[ 'default' ] )  ? $args[ 'default' ] : '';
+        $value = get_option( $args[ 'name' ], $default );
+        if ( isset( $args[ 'revert' ] ) && $args[ 'revert' ] == true && trim( $value ) == '' ) {
+            $value = $default;
+        }
+        $comments = isset( $args[ 'comments' ] ) ? '<br><p class="description">' . $args[ 'comments' ] . '</p>' : '';
+
+        printf(
+            '<input type="password" id="%s" name="%s" value="%s" style="width: %s;" />%s',
+            esc_attr( $args[ 'id' ] ),
+            esc_attr( $args[ 'name' ] ),
+            esc_html( $value ),
+            esc_attr( $width ),
+            wp_kses_post( $comments )
+        );
+    } // settings_field_password()
 
 
     /**
