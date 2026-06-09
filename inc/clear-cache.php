@@ -55,6 +55,14 @@ class Clear {
 
 
     /**
+     * Cache for clearing actions to avoid repeated option lookups
+     *
+     * @var array|null
+     */
+    private $clearing_actions_cache = null;
+
+
+    /**
      * Load on init
      */
     public function init() {
@@ -78,13 +86,18 @@ class Clear {
      * Clear all caches if the correct query parameters are present or if forced.
      *
      * @param bool $force Optional. If true, forces cache clearing without checking query parameters. Default false.
+     * @param bool $log_results Optional. If true, logs the results of each clearing action. Default false.
      * @return array|null Returns an array of results if $force is true, otherwise null.
      */
-    public function clear_all( $force = false ) {
+    public function clear_all( $force = false, $log_results = false ) {
         if ( ! $force &&
             ( ! isset( $_GET[ $this->action_param ] ) || absint( wp_unslash( $_GET[ $this->action_param ] ) ) !== 1 ||
             ! isset( $_GET[ '_wpnonce' ] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET[ '_wpnonce' ] ) ), $this->nonce ) )
         ) {
+            return;
+        }
+
+        if ( ! current_user_can( 'manage_options' ) ) {
             return;
         }
 
@@ -165,6 +178,12 @@ class Clear {
             do_action( 'cceverywhere_after_clear', $action, $status, $error );
         }
 
+        // Log the results
+        if ( $log_results ) {
+            $results = get_option( $this->option_key, [] );
+            error_log( 'Clear Cache Everywhere results: ' . print_r( $results, true ) );
+        }
+
         // If this was a page request, redirect to remove nonce/action
         if ( ! $force ) {
             wp_safe_redirect( remove_query_arg( [ $this->action_param, '_wpnonce' ] ) );
@@ -179,6 +198,10 @@ class Clear {
      * @return array List of actions with keys: key, title, run_context, enabled.
      */
     public function get_clearing_actions() {
+        if ( $this->clearing_actions_cache !== null ) {
+            return $this->clearing_actions_cache;
+        }
+
         $fields = ( new Settings() )->get_settings_fields();
         $actions = [];
 
@@ -190,15 +213,18 @@ class Clear {
             $enabled = (bool) get_option( CCEVERYWHERE__TEXTDOMAIN . '_' . $field[ 'key' ], $field[ 'default' ] ?? false );
 
             $actions[] = [
-                'key'        => $field[ 'key' ],
-                'title'      => $field[ 'title' ],
-                'run_context'=> $field[ 'run_context' ],
-                'callback'   => $field[ 'callback' ] ?? null,
-                'enabled'    => $enabled
+                'key'         => $field[ 'key' ],
+                'title'       => $field[ 'title' ],
+                'run_context' => $field[ 'run_context' ],
+                'callback'    => $field[ 'callback' ] ?? null,
+                'enabled'     => $enabled
             ];
         }
 
-        return $actions;
+        $actions = apply_filters( 'cceverywhere_clearing_actions', $actions );
+
+        $this->clearing_actions_cache = $actions;
+        return $this->clearing_actions_cache;
     } // End get_clearing_actions()
 
 
@@ -304,7 +330,7 @@ class Clear {
      */
     public function clear_opcache_reset() {
         if ( ! function_exists( 'opcache_reset' ) ) {
-            return [ 'status' => 'fail', 'error_message' => 'OPcache not available.' ];
+            return [ 'status' => 'info', 'error_message' => 'OPcache not available.' ];
         }
 
         if ( opcache_reset() ) {
@@ -313,6 +339,32 @@ class Clear {
 
         return [ 'status' => 'fail', 'error_message' => 'opcache_reset() failed.' ];
     } // End clear_opcache_reset()
+
+
+    /**
+     * Clear APCu cache
+     *
+     * @return array
+     */
+    public function clear_apcu() {
+        if ( ! extension_loaded( 'apcu' ) ) {
+            return [ 'status' => 'info', 'error_message' => 'APCu extension not loaded.' ];
+        }
+
+        if ( ! ini_get( 'apc.enabled' ) ) {
+            return [ 'status' => 'info', 'error_message' => 'APCu is loaded but not enabled (apc.enabled is off).' ];
+        }
+
+        if ( ! function_exists( 'apcu_clear_cache' ) ) {
+            return [ 'status' => 'info', 'error_message' => 'apcu_clear_cache() function not available.' ];
+        }
+
+        if ( apcu_clear_cache() ) {
+            return [ 'status' => 'success', 'error_message' => null ];
+        }
+
+        return [ 'status' => 'fail', 'error_message' => 'apcu_clear_cache() returned false.' ];
+    } // End clear_apcu()
 
 
     /**
@@ -589,7 +641,9 @@ class Clear {
         foreach ( $sanitized_cookies as $cookie_name => $cookie_value ) {
             $cookie_name = preg_replace( '/[^a-zA-Z0-9_\-]/', '', $cookie_name );
 
-            if ( strpos( $cookie_name, 'wordpress_logged_in_' ) !== false ) {
+            if ( strpos( $cookie_name, 'wordpress_logged_in_' ) !== false ||
+                strpos( $cookie_name, 'wordpress_sec_' ) !== false ||
+                strpos( $cookie_name, 'wp-settings-' ) !== false ) {
                 continue;
             }
 
@@ -788,7 +842,7 @@ class Clear {
      * @return array
      */
     public function clear_hummingbird_cache() {
-        if ( function_exists( 'Hummingbird\Cache::clear_all_cache' ) ) {
+        if ( method_exists( '\Hummingbird\Cache', 'clear_all_cache' ) ) {
             \Hummingbird\Cache::clear_all_cache();
             return [ 'status' => 'success', 'error_message' => null ];
         }
@@ -825,35 +879,82 @@ class Clear {
 
 
     /**
-     * Parse the results into separate arrays
+     * Clear Breeze cache
      *
-     * @param array $results
      * @return array
      */
-    public function parse_results( $results ) {
-        // Prepare messages
-        $success_items = [];
-        $fail_items = [];
-        $skipped_items = [];
+    public function clear_breeze() {
+        do_action( 'breeze_clear_all_cache' );
+        return [ 'status' => 'success', 'error_message' => null ];
+    } // End clear_breeze()
 
-        foreach ( $results as $key => $result ) {
-            if ( $result[ 'result' ] === 'success' ) {
-                $success_items[] = '<strong>' . esc_html( $result[ 'title' ] ) . '</strong>';
-            } elseif ( $result[ 'result' ] === 'fail' ) {
-                // translators: the permalinks page url
-                $incl_inst = ( $key == 'rewrite_rules' ) ? ' (' . sprintf( __( 'This happens sometimes. You can also flush rewrite rules by simply resaving your <a href="%s">permalinks settings page</a>.', 'clear-cache-everywhere' ), get_admin_url( null, 'options-permalink.php' ) ) . ')' : '';
-                $fail_items[] = '<strong>' . esc_html( $result[ 'title' ] ) . $incl_inst . '</strong>';
-            } else {
-                $skipped_items[] = '<strong>' . esc_html( $result[ 'title' ] ) . '</strong>';
-            }
+
+    /**
+     * Clear WP Engine cache
+     *
+     * @return array
+     */
+    public function clear_wp_engine() {
+        if ( ! method_exists( 'wpecommon', 'purge_varnish_cache' ) ) {
+            return [ 'status' => 'info', 'error_message' => 'WP Engine cache function not available.' ];
         }
 
-        return [
-            'success' => $success_items,
-            'fail'    => $fail_items,
-            'skipped' => $skipped_items
-        ];
-    } // End parse_results()
+        wpecommon::purge_varnish_cache();
+        return [ 'status' => 'success', 'error_message' => null ];
+    } // End clear_wp_engine()
+
+
+    /**
+     * Clear Kinsta cache via purge URL
+     *
+     * @return array
+     */
+    public function clear_kinsta() {
+        if ( ! defined( 'KINSTAMU_VERSION' ) ) {
+            return [ 'status' => 'info', 'error_message' => 'Kinsta MU plugin not detected.' ];
+        }
+
+        $response = wp_remote_get( 'https://localhost/kinsta-clear-cache-all', [
+            'sslverify' => false,
+            'timeout'   => 5
+        ] );
+
+        if ( is_wp_error( $response ) ) {
+            return [ 'status' => 'fail', 'error_message' => $response->get_error_message() ];
+        }
+
+        return [ 'status' => 'success', 'error_message' => null ];
+    } // End clear_kinsta()
+
+
+    /**
+     * Clear NitroPack cache
+     *
+     * @return array
+     */
+    public function clear_nitropack() {
+        if ( ! function_exists( 'nitropack_sdk_purge' ) ) {
+            return [ 'status' => 'fail', 'error_message' => 'NitroPack SDK not available.' ];
+        }
+
+        nitropack_sdk_purge();
+        return [ 'status' => 'success', 'error_message' => null ];
+    } // End clear_nitropack()
+
+
+    /**
+     * Clear Pantheon cache
+     *
+     * @return array
+     */
+    public function clear_pantheon() {
+        if ( ! function_exists( 'pantheon_wp_clear_edge_all' ) ) {
+            return [ 'status' => 'fail', 'error_message' => 'Pantheon clear edge function not available.' ];
+        }
+
+        pantheon_wp_clear_edge_all();
+        return [ 'status' => 'success', 'error_message' => null ];
+    } // End clear_pantheon()
 
 
     /**
@@ -970,8 +1071,8 @@ class Clear {
                 continue;
             }
 
-            if ( isset( $run_context[ 'callback' ] ) && is_callable( $run_context[ 'callback' ] ) ) {
-                $callback = $run_context[ 'callback' ];
+            if ( isset( $action[ 'callback' ] ) && is_callable( $action[ 'callback' ] ) ) {
+                $callback = $action[ 'callback' ];
             } else {
                 $method = 'clear_' . $key;
                 if ( ! method_exists( $this, $method ) ) {

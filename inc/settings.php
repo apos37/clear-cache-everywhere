@@ -88,13 +88,7 @@ class Settings {
 
             <!-- Clear Cache Button -->
             <br><br>
-            <?php
-            $clear_cache_url = add_query_arg( [
-                (new Clear())->action_param => 1,
-                '_wpnonce' => wp_create_nonce( $this->nonce )
-            ] );
-            ?>
-            <button id="cce-clear-cache-btn" class="button button-secondary cce-clear-cache-btn" href="<?php echo esc_url( $clear_cache_url ); ?>">
+            <button id="cce-clear-cache-btn" class="button button-secondary cce-clear-cache-btn">
                 <?php esc_html_e( 'Clear Cache Now', 'clear-cache-everywhere' ); ?>
             </button>
 
@@ -202,6 +196,16 @@ class Settings {
                 'default'     => FALSE,
                 'run_context' => 'ajax',
                 'comments'    => __( 'Resets PHP OPcache to clear cached scripts. May take a few seconds on large sites.', 'clear-cache-everywhere' ),
+            ],
+            [
+                'key'         => 'apcu',
+                'title'       => __( 'APCu Cache', 'clear-cache-everywhere' ),
+                'type'        => 'checkbox',
+                'sanitize'    => 'sanitize_checkbox',
+                'section'     => 'defaults',
+                'default'     => FALSE,
+                'run_context' => 'ajax',
+                'comments'    => __( 'Clears the APCu user cache. Separate from OPcache and commonly available on shared and managed hosting.', 'clear-cache-everywhere' ),
             ],
             [
                 'key'         => 'varnish',
@@ -511,6 +515,71 @@ class Settings {
                 'default'     => TRUE,
                 'run_context' => 'ajax',
                 'comments'    => __( 'Clears WP-Optimize cache.', 'clear-cache-everywhere' ),
+            ];
+        }
+
+        if ( is_plugin_active( 'breeze/breeze.php' ) ) {
+            $fields[] = [
+                'key'         => 'breeze',
+                'title'       => __( 'Breeze Cache', 'clear-cache-everywhere' ),
+                'type'        => 'checkbox',
+                'sanitize'    => 'sanitize_checkbox',
+                'section'     => 'integrations',
+                'default'     => TRUE,
+                'run_context' => 'ajax',
+                'comments'    => __( 'Clears Breeze (Cloudways) plugin cache.', 'clear-cache-everywhere' ),
+            ];
+        }
+
+        if ( defined( 'KINSTAMU_VERSION' ) ) {
+            $fields[] = [
+                'key'         => 'kinsta',
+                'title'       => __( 'Kinsta Cache', 'clear-cache-everywhere' ),
+                'type'        => 'checkbox',
+                'sanitize'    => 'sanitize_checkbox',
+                'section'     => 'integrations',
+                'default'     => TRUE,
+                'run_context' => 'ajax',
+                'comments'    => __( 'Clears Kinsta server-level cache via the Kinsta MU plugin.', 'clear-cache-everywhere' ),
+            ];
+        }
+
+        if ( method_exists( 'wpecommon', 'purge_varnish_cache' ) ) {
+            $fields[] = [
+                'key'         => 'wp_engine',
+                'title'       => __( 'WP Engine Cache', 'clear-cache-everywhere' ),
+                'type'        => 'checkbox',
+                'sanitize'    => 'sanitize_checkbox',
+                'section'     => 'integrations',
+                'default'     => TRUE,
+                'run_context' => 'ajax',
+                'comments'    => __( 'Clears WP Engine server-level Varnish cache.', 'clear-cache-everywhere' ),
+            ];
+        }
+
+        if ( is_plugin_active( 'nitropack-integration/nitropack.php' ) ) {
+            $fields[] = [
+                'key'         => 'nitropack',
+                'title'       => __( 'NitroPack Cache', 'clear-cache-everywhere' ),
+                'type'        => 'checkbox',
+                'sanitize'    => 'sanitize_checkbox',
+                'section'     => 'integrations',
+                'default'     => TRUE,
+                'run_context' => 'ajax',
+                'comments'    => __( 'Clears NitroPack plugin cache.', 'clear-cache-everywhere' ),
+            ];
+        }
+
+        if ( is_plugin_active( 'pantheon-advanced-page-cache/pantheon-advanced-page-cache.php' ) ) {
+            $fields[] = [
+                'key'         => 'pantheon',
+                'title'       => __( 'Pantheon Edge Cache', 'clear-cache-everywhere' ),
+                'type'        => 'checkbox',
+                'sanitize'    => 'sanitize_checkbox',
+                'section'     => 'integrations',
+                'default'     => TRUE,
+                'run_context' => 'ajax',
+                'comments'    => __( 'Clears Pantheon edge cache via the Pantheon Advanced Page Cache plugin.', 'clear-cache-everywhere' ),
             ];
         }
 
