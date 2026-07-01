@@ -323,7 +323,7 @@ class Settings {
         ];
 
         // Integrations
-        if ( is_plugin_active( 'cornerstone/cornerstone.php' ) ) {
+        if ( is_plugin_active( 'cornerstone/cornerstone.php' ) || defined( 'CS_VERSION' ) ) {
             $fields[] = [
                 'key'         => 'cornerstone',
                 'title'       => __( 'Cornerstone Cache', 'clear-cache-everywhere' ),

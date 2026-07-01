@@ -4,7 +4,7 @@ Tags: cache, clear cache, flush cache, performance, admin bar
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.2.2
+Stable tag: 1.2.2.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.txt
 
@@ -130,6 +130,9 @@ https://youtu.be/wjCEGl2sSzQ
 1. Settings page and admin bar button.
 
 == Changelog ==
+= 1.2.2.1 =
+* Fix: Cornerstone integration wasn't working on X Theme Pro
+
 = 1.2.2 =
 * Fix: `cceverywhere_clear_all()` helper function now correctly supports the `$log_results` parameter
 * Fix: Custom callbacks on page-context actions now fire correctly
