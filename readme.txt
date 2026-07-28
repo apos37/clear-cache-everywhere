@@ -139,7 +139,7 @@ https://youtu.be/wjCEGl2sSzQ
 1. Settings page and admin bar button.
 
 == Changelog ==
-= 1.2.3 = // TODO:
+= 1.2.3 =
 * Fix: Nginx Helper integration was calling a non-existent function; now uses the correct `rt_nginx_helper_purge_all` action hook
 * Fix: Hummingbird integration used `function_exists()` on a class method, which never evaluates true; now uses `method_exists()`
 * Update: Added Breeze, NitroPack, and Pantheon Advanced Page Cache existence guards to their clearing methods and settings field registration
