@@ -4,7 +4,7 @@ Tags: cache, clear cache, flush cache, performance, admin bar
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.2.2.1
+Stable tag: 1.2.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.txt
 
@@ -40,6 +40,7 @@ The following clearing actions are available:
 - **Browser Cache** – Forces browsers to revalidate and reload cached static assets.
 - **Hosting Cache** – Triggers a configured purge endpoint to clear host-level caching.
 - **Cloudflare Cache** – Purges all Cloudflare-cached content via the Cloudflare API.
+- **Generic CDN Cache** – Purges cache via a configured CDN endpoint and API key.
 
 **Integrations:**
 
@@ -47,6 +48,9 @@ The plugin already supports clearing cache for the following third-party plugins
 
 - Autoptimize
 - Breeze (Cloudways)
+- Cache Enabler
+- Cachify
+- Cloudflare
 - Comet Cache
 - Cornerstone
 - Elementor
@@ -55,10 +59,15 @@ The plugin already supports clearing cache for the following third-party plugins
 - LiteSpeed Cache
 - Nginx Helper
 - NitroPack
+- Object Cache Pro
 - Pantheon Advanced Page Cache
+- Powered Cache
+- Rocket.net
 - SiteGround Optimizer
+- SpinupWP
 - Swift Performance
 - W3 Total Cache
+- WP Cloudflare Super Page Cache
 - WP Engine
 - WP Fastest Cache
 - WP Rocket
@@ -130,6 +139,15 @@ https://youtu.be/wjCEGl2sSzQ
 1. Settings page and admin bar button.
 
 == Changelog ==
+= 1.2.3 = // TODO:
+* Fix: Nginx Helper integration was calling a non-existent function; now uses the correct `rt_nginx_helper_purge_all` action hook
+* Fix: Hummingbird integration used `function_exists()` on a class method, which never evaluates true; now uses `method_exists()`
+* Update: Added Breeze, NitroPack, and Pantheon Advanced Page Cache existence guards to their clearing methods and settings field registration
+* Update: Added Cache Enabler, SpinupWP, Cachify, Powered Cache, Rocket.net, Object Cache Pro, and WP Cloudflare Super Page Cache integrations
+* Update: Added generic CDN purge action (purge URL + API key) for CDNs without a dedicated integration
+* Update: All integration settings fields now verify the target plugin's function/class/hook actually exists before displaying, in addition to `is_plugin_active()`, so unverified or version-mismatched integrations no longer surface as failing checkboxes
+
+
 = 1.2.2.1 =
 * Fix: Cornerstone integration wasn't working on X Theme Pro
 

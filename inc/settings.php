@@ -299,7 +299,7 @@ class Settings {
                 'title'       => __( 'Cloudflare Cache', 'clear-cache-everywhere' ),
                 'type'        => 'checkbox',
                 'sanitize'    => 'sanitize_checkbox',
-                'section'     => 'hosting',
+                'section'     => 'cdn',
                 'default'     => FALSE,
                 'run_context' => 'ajax',
                 'comments'    => __( 'Clears caching handled by Cloudflare.', 'clear-cache-everywhere' ),
@@ -309,7 +309,7 @@ class Settings {
                 'title'    => __( 'Cloudflare Zone ID', 'clear-cache-everywhere' ),
                 'type'     => 'text',
                 'sanitize' => 'sanitize_text_field',
-                'section'  => 'hosting',
+                'section'  => 'cdn',
                 'comments' => __( 'Required to clear Cloudflare cache. Find this in your Cloudflare dashboard under Overview > API > Zone ID.', 'clear-cache-everywhere' ),
             ],
             [
@@ -317,13 +317,39 @@ class Settings {
                 'title'    => __( 'Cloudflare API Token', 'clear-cache-everywhere' ),
                 'type'     => 'password',
                 'sanitize' => 'sanitize_text_field',
-                'section'  => 'hosting',
+                'section'  => 'cdn',
                 'comments' => __( 'Required to clear Cloudflare cache. Find this in your Cloudflare dashboard under Overview > API > Get Your Token > Create a New Token with Permission: Zone, Cache Purge, Purge.', 'clear-cache-everywhere' ),
+            ],
+            [
+                'key'         => 'cdn_generic_cache',
+                'title'       => __( 'Generic CDN Cache', 'clear-cache-everywhere' ),
+                'type'        => 'checkbox',
+                'sanitize'    => 'sanitize_checkbox',
+                'section'     => 'cdn',
+                'default'     => FALSE,
+                'run_context' => 'ajax',
+                'comments'    => __( 'Purges cache via a configured generic CDN endpoint.', 'clear-cache-everywhere' ),
+            ],
+            [
+                'key'      => 'cdn_purge_url',
+                'title'    => __( 'CDN Purge Endpoint', 'clear-cache-everywhere' ),
+                'type'     => 'text',
+                'sanitize' => 'sanitize_text_field',
+                'section'  => 'cdn',
+                'comments' => __( 'Full REST purge-all endpoint URL for your CDN (e.g. KeyCDN, Bunny, StackPath).', 'clear-cache-everywhere' ),
+            ],
+            [
+                'key'      => 'cdn_api_key',
+                'title'    => __( 'CDN API Key', 'clear-cache-everywhere' ),
+                'type'     => 'password',
+                'sanitize' => 'sanitize_text_field',
+                'section'  => 'cdn',
+                'comments' => __( 'API key or token sent as a Bearer Authorization header.', 'clear-cache-everywhere' ),
             ],
         ];
 
         // Integrations
-        if ( is_plugin_active( 'cornerstone/cornerstone.php' ) || defined( 'CS_VERSION' ) ) {
+        if ( ( is_plugin_active( 'cornerstone/cornerstone.php' ) && has_action( 'cs_purge_tmp' ) ) || defined( 'CS_VERSION' ) ) {
             $fields[] = [
                 'key'         => 'cornerstone',
                 'title'       => __( 'Cornerstone Cache', 'clear-cache-everywhere' ),
@@ -336,7 +362,7 @@ class Settings {
             ];
         }
 
-        if ( is_plugin_active( 'elementor/elementor.php' ) ) {
+        if ( is_plugin_active( 'elementor/elementor.php' ) && class_exists( '\Elementor\Plugin' ) ) {
             $fields[] = [
                 'key'         => 'elementor',
                 'title'       => __( 'Elementor Cache', 'clear-cache-everywhere' ),
@@ -349,7 +375,7 @@ class Settings {
             ];
         }
 
-        if ( is_plugin_active( 'wp-super-cache/wp-cache.php' ) ) {
+        if ( is_plugin_active( 'wp-super-cache/wp-cache.php' ) && function_exists( 'wp_cache_clear_cache' ) ) {
             $fields[] = [
                 'key'         => 'wp_super_cache',
                 'title'       => __( 'WP Super Cache', 'clear-cache-everywhere' ),
@@ -362,7 +388,7 @@ class Settings {
             ];
         }
 
-        if ( is_plugin_active( 'w3-total-cache/w3-total-cache.php' ) ) {
+        if ( is_plugin_active( 'w3-total-cache/w3-total-cache.php' ) && function_exists( 'w3tc_flush_all' ) ) {
             $fields[] = [
                 'key'         => 'w3_total_cache',
                 'title'       => __( 'W3 Total Cache', 'clear-cache-everywhere' ),
@@ -375,7 +401,7 @@ class Settings {
             ];
         }
 
-        if ( is_plugin_active( 'wp-rocket/wp-rocket.php' ) ) {
+        if ( is_plugin_active( 'wp-rocket/wp-rocket.php' ) && function_exists( 'rocket_clean_domain' ) ) {
             $fields[] = [
                 'key'         => 'wp_rocket',
                 'title'       => __( 'WP Rocket', 'clear-cache-everywhere' ),
@@ -388,7 +414,7 @@ class Settings {
             ];
         }
 
-        if ( is_plugin_active( 'litespeed-cache/litespeed-cache.php' ) ) {
+        if ( is_plugin_active( 'litespeed-cache/litespeed-cache.php' ) && has_action( 'litespeed_purge_all' ) ) {
             $fields[] = [
                 'key'         => 'litespeed_cache',
                 'title'       => __( 'LiteSpeed Cache', 'clear-cache-everywhere' ),
@@ -401,7 +427,7 @@ class Settings {
             ];
         }
 
-        if ( is_plugin_active( 'sg-cachepress/sg-cachepress.php' ) ) {
+        if ( is_plugin_active( 'sg-cachepress/sg-cachepress.php' ) && class_exists( 'SG_CachePress_Supercacher' ) ) {
             $fields[] = [
                 'key'         => 'sg_optimizer',
                 'title'       => __( 'SiteGround Optimizer', 'clear-cache-everywhere' ),
@@ -414,7 +440,7 @@ class Settings {
             ];
         }
 
-        if ( is_plugin_active( 'cloudflare/cloudflare.php' ) ) {
+        if ( is_plugin_active( 'cloudflare/cloudflare.php' ) && class_exists( 'CF\WordPress\Hooks' ) ) {
             $fields[] = [
                 'key'         => 'cloudflare',
                 'title'       => __( 'Cloudflare Cache', 'clear-cache-everywhere' ),
@@ -427,7 +453,7 @@ class Settings {
             ];
         }
 
-        if ( is_plugin_active( 'autoptimize/autoptimize.php' ) ) {
+        if ( is_plugin_active( 'autoptimize/autoptimize.php' ) && class_exists( 'autoptimizeCache' ) ) {
             $fields[] = [
                 'key'         => 'autoptimize',
                 'title'       => __( 'Autoptimize Cache', 'clear-cache-everywhere' ),
@@ -440,7 +466,7 @@ class Settings {
             ];
         }
 
-        if ( is_plugin_active( 'swift-performance-lite/performance.php' ) || is_plugin_active( 'swift-performance/performance.php' ) ) {
+        if ( ( is_plugin_active( 'swift-performance-lite/performance.php' ) || is_plugin_active( 'swift-performance/performance.php' ) ) && function_exists( 'swift_performance_cache_clear' ) ) {
             $fields[] = [
                 'key'         => 'swift_performance',
                 'title'       => __( 'Swift Performance Cache', 'clear-cache-everywhere' ),
@@ -453,7 +479,7 @@ class Settings {
             ];
         }
 
-        if ( is_plugin_active( 'comet-cache/comet-cache.php' ) ) {
+        if ( is_plugin_active( 'comet-cache/comet-cache.php' ) && function_exists( 'comet_cache_clear_cache' ) ) {
             $fields[] = [
                 'key'         => 'comet_cache',
                 'title'       => __( 'Comet Cache', 'clear-cache-everywhere' ),
@@ -466,7 +492,7 @@ class Settings {
             ];
         }
 
-        if ( is_plugin_active( 'wp-fastest-cache/wpFastestCache.php' ) ) {
+        if ( is_plugin_active( 'wp-fastest-cache/wpFastestCache.php' ) && function_exists( 'wpfc_clear_cache' ) ) {
             $fields[] = [
                 'key'         => 'wp_fastest_cache',
                 'title'       => __( 'WP Fastest Cache', 'clear-cache-everywhere' ),
@@ -479,7 +505,7 @@ class Settings {
             ];
         }
 
-        if ( is_plugin_active( 'hummingbird-performance/hummingbird.php' ) ) {
+        if ( is_plugin_active( 'hummingbird-performance/hummingbird.php' ) && class_exists( 'Hummingbird\Cache' )) {
             $fields[] = [
                 'key'         => 'hummingbird_cache',
                 'title'       => __( 'Hummingbird Cache', 'clear-cache-everywhere' ),
@@ -492,7 +518,7 @@ class Settings {
             ];
         }
 
-        if ( is_plugin_active( 'nginx-helper/nginx-helper.php' ) ) {
+        if ( is_plugin_active( 'nginx-helper/nginx-helper.php' ) && has_action( 'rt_nginx_helper_purge_all' ) ) {
             $fields[] = [
                 'key'         => 'nginx_helper',
                 'title'       => __( 'Nginx Helper', 'clear-cache-everywhere' ),
@@ -504,8 +530,7 @@ class Settings {
                 'comments'    => __( 'Purges cache managed by Nginx Helper plugin.', 'clear-cache-everywhere' ),
             ];
         }
-
-        if ( is_plugin_active( 'wp-optimize/wp-optimize.php' ) ) {
+        if ( is_plugin_active( 'wp-optimize/wp-optimize.php' ) && function_exists( 'wp_optimize_clear_cache' ) ) {
             $fields[] = [
                 'key'         => 'wp_optimize',
                 'title'       => __( 'WP-Optimize Cache', 'clear-cache-everywhere' ),
@@ -518,7 +543,7 @@ class Settings {
             ];
         }
 
-        if ( is_plugin_active( 'breeze/breeze.php' ) ) {
+        if ( is_plugin_active( 'breeze/breeze.php' ) && has_action( 'breeze_clear_all_cache' ) ) {
             $fields[] = [
                 'key'         => 'breeze',
                 'title'       => __( 'Breeze Cache', 'clear-cache-everywhere' ),
@@ -557,7 +582,7 @@ class Settings {
             ];
         }
 
-        if ( is_plugin_active( 'nitropack-integration/nitropack.php' ) ) {
+        if ( is_plugin_active( 'nitropack-integration/nitropack.php' ) && function_exists( 'nitropack_sdk_purge' ) ) {
             $fields[] = [
                 'key'         => 'nitropack',
                 'title'       => __( 'NitroPack Cache', 'clear-cache-everywhere' ),
@@ -570,7 +595,7 @@ class Settings {
             ];
         }
 
-        if ( is_plugin_active( 'pantheon-advanced-page-cache/pantheon-advanced-page-cache.php' ) ) {
+        if ( is_plugin_active( 'pantheon-advanced-page-cache/pantheon-advanced-page-cache.php' ) && function_exists( 'pantheon_wp_clear_edge_all' ) ) {
             $fields[] = [
                 'key'         => 'pantheon',
                 'title'       => __( 'Pantheon Edge Cache', 'clear-cache-everywhere' ),
@@ -580,6 +605,97 @@ class Settings {
                 'default'     => TRUE,
                 'run_context' => 'ajax',
                 'comments'    => __( 'Clears Pantheon edge cache via the Pantheon Advanced Page Cache plugin.', 'clear-cache-everywhere' ),
+            ];
+        }
+
+        if ( is_plugin_active( 'cache-enabler/cache-enabler.php' ) && function_exists( 'cache_enabler_clear_total_cache' ) ) {
+            $fields[] = [
+                'key'         => 'cache_enabler',
+                'title'       => __( 'Cache Enabler', 'clear-cache-everywhere' ),
+                'type'        => 'checkbox',
+                'sanitize'    => 'sanitize_checkbox',
+                'section'     => 'integrations',
+                'default'     => TRUE,
+                'run_context' => 'ajax',
+                'comments'    => __( 'Clears Cache Enabler plugin cache.', 'clear-cache-everywhere' ),
+            ];
+        }
+
+        if ( function_exists( 'spinupwp_purge_site_cache' ) ) {
+            $fields[] = [
+                'key'         => 'spinupwp',
+                'title'       => __( 'SpinupWP Cache', 'clear-cache-everywhere' ),
+                'type'        => 'checkbox',
+                'sanitize'    => 'sanitize_checkbox',
+                'section'     => 'integrations',
+                'default'     => TRUE,
+                'run_context' => 'ajax',
+                'comments'    => __( 'Clears SpinupWP server-level page cache.', 'clear-cache-everywhere' ),
+            ];
+        }
+
+        if ( is_plugin_active( 'cachify/cachify.php' ) && has_action( 'cachify_flush_cache' ) ) {
+            $fields[] = [
+                'key'         => 'cachify',
+                'title'       => __( 'Cachify', 'clear-cache-everywhere' ),
+                'type'        => 'checkbox',
+                'sanitize'    => 'sanitize_checkbox',
+                'section'     => 'integrations',
+                'default'     => TRUE,
+                'run_context' => 'ajax',
+                'comments'    => __( 'Clears Cachify plugin cache.', 'clear-cache-everywhere' ),
+            ];
+        }
+
+        if ( is_plugin_active( 'powered-cache/powered-cache.php' ) && function_exists( 'powered_cache_flush_cache' ) ) {
+            $fields[] = [
+                'key'         => 'powered_cache',
+                'title'       => __( 'Powered Cache', 'clear-cache-everywhere' ),
+                'type'        => 'checkbox',
+                'sanitize'    => 'sanitize_checkbox',
+                'section'     => 'integrations',
+                'default'     => TRUE,
+                'run_context' => 'ajax',
+                'comments'    => __( 'Clears Powered Cache plugin cache.', 'clear-cache-everywhere' ),
+            ];
+        }
+
+        if ( function_exists( 'rocketnet_purge_cache' ) ) {
+            $fields[] = [
+                'key'         => 'rocketnet',
+                'title'       => __( 'Rocket.net Cache', 'clear-cache-everywhere' ),
+                'type'        => 'checkbox',
+                'sanitize'    => 'sanitize_checkbox',
+                'section'     => 'integrations',
+                'default'     => TRUE,
+                'run_context' => 'ajax',
+                'comments'    => __( 'Clears Rocket.net server-level cache.', 'clear-cache-everywhere' ),
+            ];
+        }
+
+        if ( class_exists( '\RedisCachePro\Plugin' ) ) {
+            $fields[] = [
+                'key'         => 'object_cache_pro',
+                'title'       => __( 'Object Cache Pro', 'clear-cache-everywhere' ),
+                'type'        => 'checkbox',
+                'sanitize'    => 'sanitize_checkbox',
+                'section'     => 'integrations',
+                'default'     => TRUE,
+                'run_context' => 'ajax',
+                'comments'    => __( 'Flushes Object Cache Pro Redis cache.', 'clear-cache-everywhere' ),
+            ];
+        }
+
+        if ( is_plugin_active( 'wp-cloudflare-page-cache/wp-cloudflare-super-page-cache.php' ) && class_exists( '\SW_CLOUDFLARE_PAGECACHE' ) ) {
+            $fields[] = [
+                'key'         => 'wp_cloudflare_super_page_cache',
+                'title'       => __( 'WP Cloudflare Super Page Cache', 'clear-cache-everywhere' ),
+                'type'        => 'checkbox',
+                'sanitize'    => 'sanitize_checkbox',
+                'section'     => 'integrations',
+                'default'     => TRUE,
+                'run_context' => 'ajax',
+                'comments'    => __( 'Purges WP Cloudflare Super Page Cache.', 'clear-cache-everywhere' ),
             ];
         }
 
@@ -616,6 +732,7 @@ class Settings {
         $settings_sections = [
             [ 'defaults', __( 'Defaults', 'clear-cache-everywhere' ), '' ],
             [ 'hosting', __( 'Hosting', 'clear-cache-everywhere' ), '' ],
+            [ 'cdn', __( 'CDN', 'clear-cache-everywhere' ), '' ],
             [ 'integrations', __( 'Integrations', 'clear-cache-everywhere' ), '' ],
             [ 'custom', __( 'Custom', 'clear-cache-everywhere' ), '' ],
         ];

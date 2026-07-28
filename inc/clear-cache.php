@@ -548,6 +548,45 @@ class Clear {
 
 
     /**
+     * Clear generic CDN cache via purge URL and optional API key
+     *
+     * @return array
+     */
+    public function clear_cdn_generic_cache() {
+        $purge_url = sanitize_url( get_option( CCEVERYWHERE__TEXTDOMAIN . '_cdn_purge_url' ) );
+        $api_key = trim( get_option( CCEVERYWHERE__TEXTDOMAIN . '_cdn_api_key' ) );
+
+        if ( empty( $purge_url ) ) {
+            return [ 'status' => 'skipped', 'error_message' => 'No CDN purge endpoint configured.' ];
+        }
+
+        $args = [
+            'method'   => 'POST',
+            'blocking' => true,
+            'timeout'  => 45,
+        ];
+
+        if ( ! empty( $api_key ) ) {
+            $args[ 'headers' ] = [ 'Authorization' => 'Bearer ' . $api_key ];
+        }
+
+        $response = wp_remote_request( $purge_url, $args );
+
+        if ( is_wp_error( $response ) ) {
+            return [ 'status' => 'fail', 'error_message' => $response->get_error_message() ];
+        }
+
+        $status_code = wp_remote_retrieve_response_code( $response );
+
+        if ( $status_code < 200 || $status_code >= 300 ) {
+            return [ 'status' => 'fail', 'error_message' => 'Unexpected CDN response code: ' . $status_code ];
+        }
+
+        return [ 'status' => 'success', 'error_message' => null ];
+    } // End clear_cdn_generic_cache()
+
+
+    /**
      * Clear Cloudflare cache via zone ID
      *
      * @return array
@@ -701,6 +740,7 @@ class Clear {
     /**
      * Clear WP Super Cache
      *
+     * @unconfirmed Method not verified against plugin source
      * @return array
      */
     public function clear_wp_super_cache() {
@@ -715,6 +755,7 @@ class Clear {
     /**
      * Clear W3 Total Cache
      *
+     * @unconfirmed Method not verified against plugin source
      * @return array
      */
     public function clear_w3_total_cache() {
@@ -743,6 +784,7 @@ class Clear {
     /**
      * Clear LiteSpeed Cache
      *
+     * @unconfirmed Method not verified against plugin source
      * @return array
      */
     public function clear_litespeed_cache() {
@@ -754,6 +796,7 @@ class Clear {
     /**
      * Clear SG Optimizer cache
      *
+     * @unconfirmed Method not verified against plugin source
      * @return array
      */
     public function clear_sg_optimizer() {
@@ -767,7 +810,8 @@ class Clear {
 
     /**
      * Clear Cloudflare cache
-     *
+     * 
+     * @unconfirmed Method not verified against plugin source
      * @return array
      */
     public function clear_cloudflare() {
@@ -782,6 +826,7 @@ class Clear {
     /**
      * Clear Autoptimize cache
      *
+     * @unconfirmed Method not verified against plugin source
      * @return array
      */
     public function clear_autoptimize() {
@@ -797,6 +842,7 @@ class Clear {
     /**
      * Clear Swift Performance cache
      *
+     * @unconfirmed Method not verified against plugin source
      * @return array
      */
     public function clear_swift_performance() {
@@ -811,6 +857,7 @@ class Clear {
     /**
      * Clear Comet Cache
      *
+     * @unconfirmed Method not verified against plugin source
      * @return array
      */
     public function clear_comet_cache() {
@@ -825,6 +872,7 @@ class Clear {
     /**
      * Clear WP Fastest Cache
      *
+     * @unconfirmed Method not verified against plugin source
      * @return array
      */
     public function clear_wp_fastest_cache() {
@@ -839,14 +887,16 @@ class Clear {
     /**
      * Clear Hummingbird Cache
      *
+     * @unconfirmed Method not verified against plugin source
      * @return array
      */
     public function clear_hummingbird_cache() {
-        if ( method_exists( '\Hummingbird\Cache', 'clear_all_cache' ) ) {
-            \Hummingbird\Cache::clear_all_cache();
-            return [ 'status' => 'success', 'error_message' => null ];
+        if ( ! method_exists( '\Hummingbird\Cache', 'clear_all_cache' ) ) {
+            return [ 'status' => 'fail', 'error_message' => 'Hummingbird\Cache::clear_all_cache() not available.' ];
         }
-        return [ 'status' => 'fail', 'error_message' => 'Function Hummingbird\Cache::clear_all_cache() not available.' ];
+
+        \Hummingbird\Cache::clear_all_cache();
+        return [ 'status' => 'success', 'error_message' => null ];
     } // End clear_hummingbird_cache()
 
 
@@ -856,17 +906,19 @@ class Clear {
      * @return array
      */
     public function clear_nginx_helper() {
-        if ( function_exists( 'nginx_helper_flush_cache' ) ) {
-            nginx_helper_flush_cache();
-            return [ 'status' => 'success', 'error_message' => null ];
+        if ( ! has_action( 'rt_nginx_helper_purge_all' ) ) {
+            return [ 'status' => 'info', 'error_message' => 'Nginx Helper purge hook not registered.' ];
         }
-        return [ 'status' => 'fail', 'error_message' => 'Function nginx_helper_flush_cache() not available.' ];
+
+        do_action( 'rt_nginx_helper_purge_all' );
+        return [ 'status' => 'success', 'error_message' => null ];
     } // End clear_nginx_helper()
 
 
     /**
      * Clear WP Optimize cache
      *
+     * @unconfirmed Method not verified against plugin source
      * @return array
      */
     public function clear_wp_optimize() {
@@ -881,9 +933,14 @@ class Clear {
     /**
      * Clear Breeze cache
      *
+     * @unconfirmed Method not verified against plugin source
      * @return array
      */
     public function clear_breeze() {
+        if ( ! has_action( 'breeze_clear_all_cache' ) ) {
+            return [ 'status' => 'fail', 'error_message' => 'Breeze clear cache hook not registered.' ];
+        }
+
         do_action( 'breeze_clear_all_cache' );
         return [ 'status' => 'success', 'error_message' => null ];
     } // End clear_breeze()
@@ -892,6 +949,7 @@ class Clear {
     /**
      * Clear WP Engine cache
      *
+     * @unconfirmed Method not verified against plugin source
      * @return array
      */
     public function clear_wp_engine() {
@@ -907,6 +965,7 @@ class Clear {
     /**
      * Clear Kinsta cache via purge URL
      *
+     * @unconfirmed Method not verified against plugin source
      * @return array
      */
     public function clear_kinsta() {
@@ -930,6 +989,7 @@ class Clear {
     /**
      * Clear NitroPack cache
      *
+     * @unconfirmed Method not verified against plugin source
      * @return array
      */
     public function clear_nitropack() {
@@ -945,6 +1005,7 @@ class Clear {
     /**
      * Clear Pantheon cache
      *
+     * @unconfirmed Method not verified against plugin source
      * @return array
      */
     public function clear_pantheon() {
@@ -955,6 +1016,127 @@ class Clear {
         pantheon_wp_clear_edge_all();
         return [ 'status' => 'success', 'error_message' => null ];
     } // End clear_pantheon()
+
+
+    /**
+     * Clear Cache Enabler cache
+     *
+     * @unconfirmed Method not verified against plugin source
+     * @return array
+     */
+    public function clear_cache_enabler() {
+        if ( ! function_exists( 'cache_enabler_clear_total_cache' ) ) {
+            return [ 'status' => 'fail', 'error_message' => 'Function cache_enabler_clear_total_cache() not available.' ];
+        }
+
+        cache_enabler_clear_total_cache();
+        return [ 'status' => 'success', 'error_message' => null ];
+    } // End clear_cache_enabler()
+
+
+    /**
+     * Clear SpinupWP cache
+     *
+     * @unconfirmed Method not verified against plugin source
+     * @return array
+     */
+    public function clear_spinupwp() {
+        if ( ! function_exists( 'spinupwp_purge_site_cache' ) ) {
+            return [ 'status' => 'fail', 'error_message' => 'Function spinupwp_purge_site_cache() not available.' ];
+        }
+
+        spinupwp_purge_site_cache();
+        return [ 'status' => 'success', 'error_message' => null ];
+    } // End clear_spinupwp()
+
+
+    /**
+     * Clear Cachify cache
+     *
+     * @unconfirmed Method not verified against plugin source
+     * @return array
+     */
+    public function clear_cachify() {
+        if ( ! has_action( 'cachify_flush_cache' ) ) {
+            return [ 'status' => 'fail', 'error_message' => 'Cachify flush hook not registered.' ];
+        }
+
+        do_action( 'cachify_flush_cache' );
+        return [ 'status' => 'success', 'error_message' => null ];
+    } // End clear_cachify()
+
+
+    /**
+     * Clear Powered Cache
+     *
+     * @unconfirmed Method not verified against plugin source
+     * @return array
+     */
+    public function clear_powered_cache() {
+        if ( ! function_exists( 'powered_cache_flush_cache' ) ) {
+            return [ 'status' => 'fail', 'error_message' => 'Function powered_cache_flush_cache() not available.' ];
+        }
+
+        powered_cache_flush_cache();
+        return [ 'status' => 'success', 'error_message' => null ];
+    } // End clear_powered_cache()
+
+
+    /**
+     * Clear Rocket.net cache
+     *
+     * @unconfirmed Method not verified against plugin source
+     * @return array
+     */
+    public function clear_rocketnet() {
+        if ( ! function_exists( 'rocketnet_purge_cache' ) ) {
+            return [ 'status' => 'fail', 'error_message' => 'Function rocketnet_purge_cache() not available.' ];
+        }
+
+        rocketnet_purge_cache();
+        return [ 'status' => 'success', 'error_message' => null ];
+    } // End clear_rocketnet()
+
+
+    /**
+     * Clear RedisCachePro cache
+     *
+     * @unconfirmed Method not verified against plugin source
+     * @return array
+     */
+    public function clear_object_cache_pro() {
+        if ( ! class_exists( '\RedisCachePro\Plugin' ) ) {
+            return [ 'status' => 'fail', 'error_message' => 'RedisCachePro\Plugin class not found.' ];
+        }
+
+        if ( function_exists( 'wp_cache_flush_runtime' ) ) {
+            wp_cache_flush_runtime();
+        } else {
+            wp_cache_flush();
+        }
+
+        return [ 'status' => 'success', 'error_message' => null ];
+    } // End clear_object_cache_pro()
+
+
+    /**
+     * Clear WP Cloudflare Super Page Cache
+     *
+     * @unconfirmed Method not verified against plugin source
+     * @return array
+     */
+    public function clear_wp_cloudflare_super_page_cache() {
+        if ( ! has_action( 'switch_to_blog' ) && ! class_exists( '\SW_CLOUDFLARE_PAGECACHE' ) ) {
+            return [ 'status' => 'fail', 'error_message' => 'SW_CLOUDFLARE_PAGECACHE class not found.' ];
+        }
+
+        if ( ! class_exists( '\SW_CLOUDFLARE_PAGECACHE' ) ) {
+            return [ 'status' => 'fail', 'error_message' => 'SW_CLOUDFLARE_PAGECACHE class not found.' ];
+        }
+
+        do_action( 'switch_to_wp_cloudflare_super_page_cache_purge_all' );
+        return [ 'status' => 'success', 'error_message' => null ];
+    } // End clear_wp_cloudflare_super_page_cache()
 
 
     /**
