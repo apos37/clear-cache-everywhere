@@ -143,6 +143,13 @@ https://youtu.be/wjCEGl2sSzQ
 = 1.2.4 =
 * Update: Added Seraphinite Accelerator integration
 * Note: Seraphinite processes cache deletion in the background, so it may take up to a minute to take effect
+* Update: Added a Settings link to the plugin's action links on the Plugins page
+* Update: Rebranded the settings page with a new header, subheader, and rounded content box to match our PluginRx rebrand
+* Update: Settings page colors now automatically inherit from Admin Help Docs when it is active
+* Update: Settings now save via AJAX from the Save button in the header, with Ctrl+S / Cmd+S support and an inline saved confirmation
+* Update: Added an unsaved changes reminder and a browser warning when leaving the settings page with unsaved changes
+* Tweak: Moved the Clear Cache Now button to the right side of the header
+* Tweak: Clear Cache Now now uses the newly saved settings immediately after saving, without a page reload
 
 = 1.2.3 =
 * Fix: Nginx Helper integration was calling a non-existent function; now uses the correct `rt_nginx_helper_purge_all` action hook

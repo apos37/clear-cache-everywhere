@@ -68,6 +68,7 @@ define( 'CCEVERYWHERE_INCLUDES_ABSPATH', CCEVERYWHERE_ABSPATH . 'inc/' );       
 define( 'CCEVERYWHERE_INCLUDES_DIR', CCEVERYWHERE_DIR . 'inc/' );                                             //: https://domain.com/wp-content/plugins/text-domain/includes/
 define( 'CCEVERYWHERE_JS_PATH', CCEVERYWHERE_INCLUDES_DIR . 'js/' );                                          //: https://domain.com/wp-content/plugins/text-domain/includes/js/
 define( 'CCEVERYWHERE_CSS_PATH', CCEVERYWHERE_INCLUDES_DIR . 'css/' );                                        //: https://domain.com/wp-content/plugins/text-domain/includes/css/
+define( 'CCEVERYWHERE_IMG_PATH', CCEVERYWHERE_INCLUDES_DIR . 'img/' );                                        //: https://domain.com/wp-content/plugins/text-domain/includes/img/   
 define( 'CCEVERYWHERE_SETTINGS_PATH', admin_url( 'tools.php?page=clear_cache_everywhere' ) );
 
 // Screen ID

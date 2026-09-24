@@ -229,6 +229,27 @@ class Clear {
 
 
     /**
+     * Get the text to display when the cache has been cleared.
+     *
+     * @return string
+     */
+    public function get_cache_cleared_text() {
+        $page_context_titles = [];
+        foreach ( $this->get_clearing_actions() as $action ) {
+            if ( $action[ 'enabled' ] && $action[ 'run_context' ] === 'page' ) {
+                $page_context_titles[] = $action[ 'title' ];
+            }
+        }
+
+        if ( empty( $page_context_titles ) ) {
+            return __( 'All done. Reloading page now...', 'clear-cache-everywhere' );
+        }
+
+        return sprintf( __( 'Reloading page now to clear %s...', 'clear-cache-everywhere' ), implode( ', ', $page_context_titles ) );
+    } // End get_cache_cleared_text()
+
+
+    /**
      * Update the status of a clear action in the options table.
      *
      * @param string $key The key of the clear action (e.g., 'rewrite_rules').
@@ -1449,18 +1470,7 @@ class Clear {
         wp_enqueue_script( 'jquery' );
         wp_enqueue_script( CCEVERYWHERE_TEXTDOMAIN . '-clear', CCEVERYWHERE_JS_PATH . 'clear-cache.js', [ 'jquery' ], CCEVERYWHERE_SCRIPT_VERSION, true );
 
-        $clearing_actions = $this->get_clearing_actions();
-        $page_context_titles = [];
-        foreach ( $clearing_actions as $action ) {
-            if ( $action[ 'enabled' ] && $action[ 'run_context' ] === 'page' ) {
-                $page_context_titles[] = $action[ 'title' ];
-            }
-        }
-        if ( empty( $page_context_titles ) ) {
-            $cache_cleared_text = __( 'All done. Reloading page now...', 'clear-cache-everywhere' );
-        } else {
-            $cache_cleared_text = sprintf( __( 'Reloading page now to clear %s...', 'clear-cache-everywhere' ), implode( ', ', $page_context_titles ) );
-        }
+        $cache_cleared_text = $this->get_cache_cleared_text();
 
         wp_localize_script( CCEVERYWHERE_TEXTDOMAIN . '-clear', 'cceverywhere_ajax', [
             'ajax_url'         => admin_url( 'admin-ajax.php' ),

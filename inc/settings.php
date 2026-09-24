@@ -49,7 +49,16 @@ class Settings {
 		// Settings fields
         add_action( 'admin_init', [  $this, 'settings_fields' ] );
 
-        // JQuery and CSS
+        // Admin header for the plugin settings page
+        add_action( 'in_admin_header', [ $this, 'admin_header' ] );
+
+        // Admin theme colors
+        add_filter( 'cceverywhere_theme_colors', [ $this, 'inherit_ahd_colors' ] );
+
+        // Ajax
+        add_action( 'wp_ajax_cceverywhere_save_settings', [ $this, 'ajax_save_settings' ] );
+
+        // Enqueue scripts and styles
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
 
     } // End init()
@@ -82,65 +91,46 @@ class Settings {
         if ( $current_screen->id != CCEVERYWHERE_SETTINGS_SCREEN_ID ) {
             return;
         }
-        ?>
-		<div class="wrap">
-			<h1><?php echo esc_attr( get_admin_page_title() ) ?></h1>
 
-            <!-- Clear Cache Button -->
-            <br><br>
-            <button id="cce-clear-cache-btn" class="button button-secondary cce-clear-cache-btn">
-                <?php esc_html_e( 'Clear Cache Now', 'clear-cache-everywhere' ); ?>
-            </button>
+        $last_results = get_option( 'clear_cache_everywhere_last_results', [] );
+        $clearing_actions = ( new Clear() )->get_clearing_actions();
+        $total_elapsed = 0;
 
-            <!-- Result Container -->
-            <?php
-            $last_results = get_option( 'clear_cache_everywhere_last_results', [] );
-            $total_elapsed = 0;
-
-            $clearing_actions = ( new Clear() )->get_clearing_actions();
-
-            if ( ! empty( $last_results ) && ! empty( $clearing_actions ) ) {
-                foreach ( $clearing_actions as $action ) {
-                    if ( ! empty( $action[ 'enabled' ] ) ) {
-                        $key = $action[ 'key' ];
-                        if ( isset( $last_results[ $key ] ) ) {
-                            $res = $last_results[ $key ];
-                            if ( ! empty( $res[ 'start' ] ) && ! empty( $res[ 'end' ] ) ) {
-                                $total_elapsed += $res[ 'end' ] - $res[ 'start' ];
-                            }
-                        }
-                    }
+        if ( ! empty( $last_results ) && ! empty( $clearing_actions ) ) {
+            foreach ( $clearing_actions as $action ) {
+                $key = $action[ 'key' ];
+                if ( ! empty( $action[ 'enabled' ] ) && ! empty( $last_results[ $key ][ 'start' ] ) && ! empty( $last_results[ $key ][ 'end' ] ) ) {
+                    $total_elapsed += $last_results[ $key ][ 'end' ] - $last_results[ $key ][ 'start' ];
                 }
             }
-            ?>
-            <div id="cce-clear-cache-result">
-                <?php if ( $total_elapsed > 0 ) : ?>
-                    <?php
-                    echo sprintf(
-                        /* translators: %s is total elapsed seconds for clearing actions only */
-                        __( 'Total time for clearing all enabled options the last time they were cleared: <strong>%s seconds</strong>.<br><em>Note: This does not include page reload or any recaching by the site or plugins afterwards.</em>', 'clear-cache-everywhere' ),
-                        number_format( $total_elapsed, 3 )
-                    );
-                    ?>
-                <?php else : ?>
-                    <?php
-                    echo __( 'No enabled clearing actions have been run. You may clear all using the button above, or individually using the buttons below.', 'clear-cache-everywhere' );
-                    ?>
-                <?php endif; ?>
+        }
+        ?>
+        <div class="wrap cceverywhere-wrap">
+            <hr class="wp-header-end">
+            <div class="cceverywhere-content-wrap">
+                <div class="cceverywhere-box">
+                    <div class="cceverywhere-box-body">
+                        <div id="cce-clear-cache-result">
+                            <?php if ( $total_elapsed > 0 ) : ?>
+                                <?php
+                                echo wp_kses_post( sprintf(
+                                    /* translators: %s is total elapsed seconds for clearing actions only */
+                                    __( 'Total time for clearing all enabled options the last time they were cleared: <strong>%s seconds</strong>.<br><em>Note: This does not include page reload or any recaching by the site or plugins afterwards.</em>', 'clear-cache-everywhere' ),
+                                    number_format( $total_elapsed, 3 )
+                                ) );
+                                ?>
+                            <?php else : ?>
+                                <?php esc_html_e( 'No enabled clearing actions have been run. You may clear all using the Clear Cache Now button, or individually using the buttons below.', 'clear-cache-everywhere' ); ?>
+                            <?php endif; ?>
+                        </div>
+                        <h2><?php esc_html_e( 'Choose below which items you want to clear with the Clear Cache Now button and Admin Bar link.', 'clear-cache-everywhere' ); ?></h2>
+                        <form id="cceverywhere-settings-form" method="post">
+                            <?php do_settings_sections( CCEVERYWHERE_TEXTDOMAIN ); ?>
+                        </form>
+                    </div>
+                </div>
             </div>
-
-            <!-- Settings Form -->
-            <br><br>
-            <h2><?php esc_html_e( 'Choose below which items you want to clear with the Clear Cache Now button and Admin Bar link.', 'clear-cache-everywhere' ); ?></h2>
-			<form method="post" action="options.php">
-				<?php
-					settings_fields( CCEVERYWHERE_TEXTDOMAIN );
-					do_settings_sections( CCEVERYWHERE_TEXTDOMAIN );
-					?><br><br><?php
-                    submit_button();
-				?>
-			</form>
-		</div>
+        </div>
         <?php
     } // End page()
 
@@ -902,7 +892,7 @@ class Settings {
             $key = $args[ 'key' ];
 
             printf(
-                ' <button class="button button-small cce-run-action-btn" data-key="%s">%s</button>',
+                ' <button type="button" class="cceverywhere-button cce-run-action-btn" data-key="%s">%s</button>',
                 esc_attr( $key ),
                 esc_html__( 'Clear', 'clear-cache-everywhere' )
             );
@@ -995,18 +985,123 @@ class Settings {
 
 
     /**
-     * Enqueue javascript
+     * Include the admin header for the plugin settings page.
      *
      * @return void
      */
+    public function admin_header() {
+        $screen = get_current_screen();
+        if ( ! isset( $screen->id ) || $screen->id !== CCEVERYWHERE_SETTINGS_SCREEN_ID ) {
+            return;
+        }
+        include CCEVERYWHERE_INCLUDES_ABSPATH . 'header.php';
+    } // End admin_header()
+
+
+    /**
+     * Inherit colors from the Admin Help Docs plugin.
+     *
+     * @param array $colors
+     * @return array
+     */
+    public function inherit_ahd_colors( $colors ) {
+        if ( ! function_exists( 'is_plugin_active' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+        if ( ! is_plugin_active( 'admin-help-docs/admin-help-docs.php' ) ) {
+            return $colors;
+        }
+        $ahd_colors = get_option( 'helpdocs_colors', [] );
+        if ( ! is_array( $ahd_colors ) || empty( $ahd_colors ) ) {
+            return $colors;
+        }
+        $map = [
+            'header_bg'    => 'header-bg',
+            'header_font'  => 'header-font',
+            'button'       => 'button',
+            'button_font'  => 'button-font',
+            'button_hover' => 'button-hover',
+        ];
+        foreach ( $map as $ahd_key => $cce_key ) {
+            if ( ! empty( $ahd_colors[ $ahd_key ] ) ) {
+                $colors[ $cce_key ] = $ahd_colors[ $ahd_key ];
+            }
+        }
+        return $colors;
+    } // End inherit_ahd_colors()
+
+
+    /**
+     * Ajax save settings callback.
+     *
+     * @return void
+     */
+    public function ajax_save_settings() {
+        if ( ! isset( $_POST[ 'nonce' ] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST[ 'nonce' ] ) ), $this->nonce ) ) {
+            wp_send_json_error( [ 'msg' => __( 'Invalid nonce.', 'clear-cache-everywhere' ) ] );
+        }
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( [ 'msg' => __( 'Unauthorized.', 'clear-cache-everywhere' ) ] );
+        }
+
+        foreach ( $this->get_settings_fields() as $field ) {
+            $option_name = CCEVERYWHERE__TEXTDOMAIN . '_' . $field[ 'key' ];
+            $value = isset( $_POST[ $option_name ] ) ? wp_unslash( $_POST[ $option_name ] ) : null; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+            if ( is_string( $value ) ) {
+                $value = trim( $value );
+            }
+            update_option( $option_name, $value );
+        }
+
+        $clear = new Clear();
+
+        wp_send_json_success( [
+            'msg'                => __( 'Settings saved successfully.', 'clear-cache-everywhere' ),
+            'clearing_actions'   => $clear->get_clearing_actions(),
+            'cache_cleared_text' => $clear->get_cache_cleared_text(),
+        ] );
+    } // End ajax_save_settings()
+
+
+    /**
+     * Enqueue javascript
+     *
+     * @param string $hook The current admin page hook.
+     * @return void
+     */
     public function enqueue_scripts( $hook ) {
-        // Check if we are on the correct admin page
         if ( $hook !== CCEVERYWHERE_SETTINGS_SCREEN_ID ) {
             return;
         }
 
-		// CSS
-		wp_enqueue_style( CCEVERYWHERE_TEXTDOMAIN . '-settings', CCEVERYWHERE_CSS_PATH . 'settings.css', [], CCEVERYWHERE_SCRIPT_VERSION );
+        $theme_handle = CCEVERYWHERE_TEXTDOMAIN . '-theme';
+        wp_enqueue_style( $theme_handle, CCEVERYWHERE_CSS_PATH . 'theme.css', [], CCEVERYWHERE_SCRIPT_VERSION );
+
+        $declarations = [];
+        foreach ( apply_filters( 'cceverywhere_theme_colors', [] ) as $var => $value ) {
+            $hex = sanitize_hex_color( $value );
+            if ( $hex ) {
+                $declarations[] = '--cceverywhere-color-' . sanitize_key( $var ) . ': ' . $hex . ';';
+            }
+        }
+        if ( ! empty( $declarations ) ) {
+            wp_add_inline_style( $theme_handle, ':root {' . implode( '', $declarations ) . '}' );
+        }
+
+        wp_enqueue_style( CCEVERYWHERE_TEXTDOMAIN . '-settings', CCEVERYWHERE_CSS_PATH . 'settings.css', [ $theme_handle ], CCEVERYWHERE_SCRIPT_VERSION );
+
+        $js_handle = CCEVERYWHERE_TEXTDOMAIN . '-settings-js';
+        wp_enqueue_script( $js_handle, CCEVERYWHERE_JS_PATH . 'settings.js', [ 'jquery', CCEVERYWHERE_TEXTDOMAIN . '-clear' ], CCEVERYWHERE_SCRIPT_VERSION, true );
+        wp_localize_script( $js_handle, 'cceverywhere_settings', [
+            'ajax_url' => admin_url( 'admin-ajax.php' ),
+            'nonce'    => wp_create_nonce( $this->nonce ),
+            'text'     => [
+                'saving'       => __( 'Saving...', 'clear-cache-everywhere' ),
+                'saved'        => __( 'Settings saved successfully.', 'clear-cache-everywhere' ),
+                'error_saving' => __( 'Error saving settings.', 'clear-cache-everywhere' ),
+            ],
+        ] );
     } // End enqueue_scripts()
 
 }

@@ -37,6 +37,9 @@ class Common {
 
 		// Add links to the website and discord
         add_filter( 'plugin_row_meta', [ $this, 'plugin_row_meta' ], 10, 2 );
+
+        // Add Settings link
+        add_filter( 'plugin_action_links_' . CCEVERYWHERE_BASENAME, [ $this, 'action_links' ] );
         
     } // End __construct()
 
@@ -70,6 +73,7 @@ class Common {
      * Add links to plugin row
      *
      * @param array $links
+     * @param string $file
      * @return array
      */
     public function plugin_row_meta( $links, $file ) {
@@ -113,5 +117,18 @@ class Common {
         // Return the links
         return (array) $links;
     } // End plugin_row_meta()
+
+
+    /**
+     * Add a Settings link to the plugin action links.
+     *
+     * @param array $links
+     * @return array
+     */
+    public function action_links( $links ) {
+        $settings_link = '<a href="' . esc_url( CCEVERYWHERE_SETTINGS_PATH ) . '">' . esc_html__( 'Settings', 'clear-cache-everywhere' ) . '</a>';
+        array_unshift( $links, $settings_link );
+        return $links;
+    } // End action_links()
 
 }

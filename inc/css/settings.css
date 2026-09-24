@@ -19,11 +19,6 @@
     box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
 }
 
-.cce-clear-cache-btn {
-    min-width: 200px;
-    text-align: center;
-}
-
 #cce-clear-cache-result {
     border: 1px solid #dee2e6;
     background-color: #f8f9fa;
