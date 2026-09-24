@@ -699,6 +699,19 @@ class Settings {
             ];
         }
 
+        if ( ( new Clear() )->is_seraphinite_available() ) {
+            $fields[] = [
+                'key'         => 'seraphinite_accelerator',
+                'title'       => __( 'Seraphinite Accelerator', 'clear-cache-everywhere' ),
+                'type'        => 'checkbox',
+                'sanitize'    => 'sanitize_checkbox',
+                'section'     => 'integrations',
+                'default'     => TRUE,
+                'run_context' => 'ajax',
+                'comments'    => __( 'Clears Seraphinite Accelerator cache. This may take up to a minute to complete.', 'clear-cache-everywhere' ),
+            ];
+        }
+
         // Apply filter to allow developers to add custom fields
         $fields = apply_filters( 'cceverywhere_custom_settings', $fields );
 

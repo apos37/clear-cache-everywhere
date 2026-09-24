@@ -2,9 +2,9 @@
 Contributors: apos37
 Tags: cache, clear cache, flush cache, performance, admin bar
 Requires at least: 6.0
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.3
+Stable tag: 1.2.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.txt
 
@@ -63,6 +63,7 @@ The plugin already supports clearing cache for the following third-party plugins
 - Pantheon Advanced Page Cache
 - Powered Cache
 - Rocket.net
+- Seraphinite Accelerator
 - SiteGround Optimizer
 - SpinupWP
 - Swift Performance
@@ -139,6 +140,10 @@ https://youtu.be/wjCEGl2sSzQ
 1. Settings page and admin bar button.
 
 == Changelog ==
+= 1.2.4 =
+* Update: Added Seraphinite Accelerator integration
+* Note: Seraphinite processes cache deletion in the background, so it may take up to a minute to take effect
+
 = 1.2.3 =
 * Fix: Nginx Helper integration was calling a non-existent function; now uses the correct `rt_nginx_helper_purge_all` action hook
 * Fix: Hummingbird integration used `function_exists()` on a class method, which never evaluates true; now uses `method_exists()`
@@ -146,7 +151,6 @@ https://youtu.be/wjCEGl2sSzQ
 * Update: Added Cache Enabler, SpinupWP, Cachify, Powered Cache, Rocket.net, Object Cache Pro, and WP Cloudflare Super Page Cache integrations
 * Update: Added generic CDN purge action (purge URL + API key) for CDNs without a dedicated integration
 * Update: All integration settings fields now verify the target plugin's function/class/hook actually exists before displaying, in addition to `is_plugin_active()`, so unverified or version-mismatched integrations no longer surface as failing checkboxes
-
 
 = 1.2.2.1 =
 * Fix: Cornerstone integration wasn't working on X Theme Pro

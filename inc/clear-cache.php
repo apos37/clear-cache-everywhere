@@ -1140,6 +1140,35 @@ class Clear {
 
 
     /**
+     * Check if the Seraphinite Accelerator API is available
+     *
+     * @return bool
+     */
+    public function is_seraphinite_available() {
+        return class_exists( 'seraph_accel\API' ) && method_exists( 'seraph_accel\API', 'OperateCache' ) && defined( 'seraph_accel\API::CACHE_OP_DEL' );
+    } // End is_seraphinite_available()
+
+
+    /**
+     * Clear Seraphinite Accelerator cache
+     *
+     * @unconfirmed Wildcard scope not verified against a live install
+     * @return array
+     */
+    public function clear_seraphinite_accelerator() {
+        if ( ! $this->is_seraphinite_available() ) {
+            return [ 'status' => 'fail', 'error_message' => 'seraph_accel\API::OperateCache() not available.' ];
+        }
+
+        foreach ( [ '/', '/*' ] as $scope ) {
+            \seraph_accel\API::OperateCache( \seraph_accel\API::CACHE_OP_DEL, $scope );
+        }
+
+        return [ 'status' => 'success', 'error_message' => null ];
+    } // End clear_seraphinite_accelerator()
+
+
+    /**
      * Run a single AJAX action
      */
     public function ajax_clear_action() {
