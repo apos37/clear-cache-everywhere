@@ -3,9 +3,8 @@
  * Plugin Name:         Clear Cache Everywhere
  * Plugin URI:          https://pluginrx.com/plugin/clear-cache-everywhere/
  * Description:         Instantly clear all cache sources including WP cache, hosting cache, transients, sessions, and browser cache.
- * Version:             1.2.4
+ * Version:             1.2.5
  * Requires at least:   6.0
- * Tested up to:        7.1
  * Requires PHP:        7.4
  * Author:              PluginRx
  * Author URI:          https://pluginrx.com/
@@ -45,7 +44,7 @@ $plugin_data = get_file_data( __FILE__, [
 
 // Versions
 define( 'CCEVERYWHERE_VERSION', $plugin_data[ 'version' ] );
-define( 'CCEVERYWHERE_SCRIPT_VERSION', CCEVERYWHERE_VERSION  );                                                // REPLACE WITH time() DURING TESTING
+define( 'CCEVERYWHERE_SCRIPT_VERSION', filter_var( get_option( 'ddtt_test_mode' ), FILTER_VALIDATE_BOOLEAN ) ? 'TEST-' . time() : CCEVERYWHERE_VERSION );
 define( 'CCEVERYWHERE_MIN_PHP_VERSION', $plugin_data[ 'requires_php' ] );
 
 // Names
@@ -81,7 +80,14 @@ define( 'CCEVERYWHERE_SETTINGS_SCREEN_ID', 'tools_page_' . CCEVERYWHERE__TEXTDOM
 require_once CCEVERYWHERE_INCLUDES_ABSPATH . 'common.php';
 require_once CCEVERYWHERE_INCLUDES_ABSPATH . 'admin-bar.php';
 require_once CCEVERYWHERE_INCLUDES_ABSPATH . 'clear-cache.php';
+require_once CCEVERYWHERE_INCLUDES_ABSPATH . 'logs.php';
 require_once CCEVERYWHERE_INCLUDES_ABSPATH . 'settings.php';
+
+
+/**
+ * Remove the daily log purge on deactivation
+ */
+register_deactivation_hook( __FILE__, [ '\Apos37\ClearCache\Logs', 'unschedule' ] );
 
 
 /**

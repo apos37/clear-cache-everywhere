@@ -62,7 +62,11 @@ class Clear {
     private $clearing_actions_cache = null;
 
 
-
+    /**
+     * Key of the AJAX action currently running, for fatal error capture
+     *
+     * @var string|null
+     */
     private $active_key = null;
 
 
@@ -169,7 +173,7 @@ class Clear {
                 $error  = $result[ 'error_message' ] ?? null;
             } catch ( \Throwable $e ) {
                 $status = 'fail';
-                $error  = $e->getMessage();
+                $error  = $this->format_throwable( $e );
             }
 
             // Update action with final result
@@ -281,7 +285,24 @@ class Clear {
 
         // Save back to the option
         update_option( $this->option_key, $results );
+
+        // Log finished results
+        if ( isset( $data[ 'end' ] ) && 'running' !== $results[ $key ][ 'status' ] ) {
+            $titles = wp_list_pluck( $this->get_clearing_actions(), 'title', 'key' );
+            Logs::add( $key, $titles[ $key ] ?? $key, $results[ $key ] );
+        }
     } // End update_clear_action()
+
+
+    /**
+     * Format an exception with its class, file and line
+     *
+     * @param \Throwable $e
+     * @return string
+     */
+    private function format_throwable( $e ) {
+        return sprintf( '%s: %s in %s on line %d', get_class( $e ), $e->getMessage(), $e->getFile(), $e->getLine() );
+    } // End format_throwable()
 
 
     /**
@@ -1182,11 +1203,15 @@ class Clear {
 
         $message = sprintf( 'Fatal error: %s in %s on line %d', $error[ 'message' ], $error[ 'file' ], $error[ 'line' ] );
 
-        $this->update_clear_action( $this->active_key, [
-            'end'           => microtime( true ),
-            'status'        => 'fail',
-            'error_message' => $message
-        ] );
+        try {
+            $this->update_clear_action( $this->active_key, [
+                'end'           => microtime( true ),
+                'status'        => 'fail',
+                'error_message' => $message
+            ] );
+        } catch ( \Throwable $e ) {
+            unset( $e );
+        }
 
         error_log( 'Clear Cache Everywhere [' . $this->active_key . ']: ' . $message );
     } // End capture_fatal()
@@ -1210,14 +1235,20 @@ class Clear {
         $results     = get_option( $this->option_key, [] );
         $current     = $results[ $key ][ 'status' ] ?? '';
 
-        if ( ! $key || ! in_array( $current, [ 'running', '' ], true ) ) {
+        if ( ! $key || 'fail' === $current ) {
             wp_send_json_success();
+        }
+
+        if ( in_array( $current, [ 'running', '' ], true ) ) {
+            $message = sprintf( 'HTTP %d from admin-ajax.php (no PHP result saved). Response: %s', $http_status, $detail );
+        } else {
+            $message = sprintf( 'The action finished on the server and saved %s, but the response failed with HTTP %d. Something broke after it ran (often an object cache or a hook). Response: %s', strtoupper( $current ), $http_status, $detail );
         }
 
         $this->update_clear_action( $key, [
             'end'           => microtime( true ),
             'status'        => 'fail',
-            'error_message' => sprintf( 'HTTP %d from admin-ajax.php (no PHP result saved). Response: %s', $http_status, $detail )
+            'error_message' => $message
         ] );
 
         wp_send_json_success();
@@ -1321,10 +1352,8 @@ class Clear {
             $error  = $result[ 'error_message' ] ?? null;
         } catch ( \Throwable $e ) {
             $status = 'fail';
-            $error  = sprintf( '%s: %s in %s on line %d', get_class( $e ), $e->getMessage(), $e->getFile(), $e->getLine() );
+            $error  = $this->format_throwable( $e );
         }
-
-        $this->active_key = null;
 
         // Update final
         $end_time = microtime( true );
@@ -1414,7 +1443,7 @@ class Clear {
                 $error  = $result[ 'error_message' ] ?? null;
             } catch ( \Throwable $e ) {
                 $status = 'fail';
-                $error  = $e->getMessage();
+                $error  = $this->format_throwable( $e );
             }
 
             $end_time = microtime( true );
@@ -1506,7 +1535,7 @@ class Clear {
             $error  = $result[ 'error_message' ] ?? null;
         } catch ( \Throwable $e ) {
             $status = 'fail';
-            $error  = $e->getMessage();
+            $error  = $this->format_throwable( $e );
         }
 
         // Update final state
@@ -1545,7 +1574,8 @@ class Clear {
         wp_localize_script( CCEVERYWHERE_TEXTDOMAIN . '-clear', 'cceverywhere_ajax', [
             'ajax_url'         => admin_url( 'admin-ajax.php' ),
             'nonce'            => wp_create_nonce( $this->nonce ),
-            'is_settings_page' => ( is_admin() && $hook === CCEVERYWHERE_SETTINGS_SCREEN_ID ),
+            'is_settings_page' => ( is_admin() && $hook === CCEVERYWHERE_SETTINGS_SCREEN_ID && 'settings' === Settings::get_current_tab() ),
+            'console_log'      => Logs::console_log(),
             'clearing_actions' => $this->get_clearing_actions(),
             'text'             => [
                 'no_actions'     => __( 'No cache clearing actions configured. Please update your settings below.', 'clear-cache-everywhere' ),
@@ -1556,6 +1586,9 @@ class Clear {
                 'please_wait'    => __( 'Please do not navigate away or close the browser while cache clearing is in progress.', 'clear-cache-everywhere' ),
                 'last_cleared'   => __( 'Last cleared on ', 'clear-cache-everywhere' ),
                 'last_attempted' => __( 'Last attempted on ', 'clear-cache-everywhere' ),
+                /* translators: 1: number of failed actions, 2: comma-separated action names */
+                'completed_with' => __( 'Completed with %1$d failure(s): %2$s. See the Logs tab for details. Reloading...', 'clear-cache-everywhere' ),
+                'no_result'      => __( 'No result returned. Check the Logs tab.', 'clear-cache-everywhere' ),
             ],
         ] );
     } // End enqueue_scripts()

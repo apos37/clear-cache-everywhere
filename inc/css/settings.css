@@ -1,81 +1,41 @@
-.wrap h2 {
-    margin-top: 3rem !important;
-    margin: 3rem 0 1rem 0 !important;
-}
-
-.form-table td {
-    margin-bottom: 9px;
-    padding: 15px 10px;
-    line-height: 1.3;
-    vertical-align: top;
-}
-
-.description {
-    display: inline-block;
-    background: white;
-    padding: 4px 10px;
-    border-radius: 4px;
-    border: 1px solid #c3c4c7;
-    box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
-}
-
 #cce-clear-cache-result {
     border: 1px solid #dee2e6;
     background-color: #f8f9fa;
     padding: 1rem;
-    margin-top: 1rem;
-    border-radius: 0.25rem;
+    border-radius: 6px;
     max-height: 400px;
     overflow-y: auto;
     font-family: monospace;
-    font-size: 0.95rem;
+    font-size: .95rem;
     line-height: 1.4;
-    width: fit-content;
+    width: 100%;
+    max-width: 100%;
+    min-height: calc( 2.8em + 2rem + 2px );
+    box-sizing: border-box;
 }
 
 #cce-clear-cache-result p {
-    margin: 0 0 0.5rem 0;
-    margin-bottom: 0;
-    padding: 0.25rem 0;
+    margin: 0;
+    padding: .25rem 0;
 }
 
-/* Success text */
-#cce-clear-cache-result .text-success {
-    color: #28a745; /* Bootstrap green */
-    font-weight: 600;
-}
-
-/* Fail text */
-#cce-clear-cache-result .text-danger {
-    color: #dc3545; /* Bootstrap red */
-    font-weight: 600;
-}
-
-/* Container around checkbox + button */
-.cce-action-container {
-    margin-bottom: 12px;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 2rem;
-}
-
-/* Run independently button */
-.cce-run-action-btn {
-    margin-top: 4px;
-    width: fit-content;
-}
-
-/* Individual result container */
 .cce-action-result {
-    margin-top: 4px;
-    font-size: 13px;
-    color: #444;
-    padding: 4px 6px;
-    border-left: 3px solid transparent;
+    font-size: 12px;
+    line-height: 17px;
+    color: #475467;
+    background-color: #f2f4f7;
+    padding: 4px 8px;
+    border-left: 3px solid #d0d5dd;
+    border-radius: 0 4px 4px 0;
+    word-break: break-word;
 }
 
-/* Success/Fail colors */
+.cce-action-result.running {
+    color: #175cd3;
+    background-color: #eff8ff;
+    border-color: #84caff;
+}
+
 .cce-action-result.success {
     color: #155724;
     background-color: #d4edda;
@@ -97,26 +57,18 @@
 
 .cce-loading-spinner {
     display: inline-block;
-    width: 16px;
-    height: 16px;
-    margin-left: 8px;
+    width: 12px;
+    height: 12px;
+    margin: 0 0 0 8px;
     border: 2px solid #ccc;
-    border-top-color: #0073aa; /* WordPress admin blue or green for success */
+    border-top-color: var( --cceverywhere-color-accent );
     border-radius: 50%;
-    animation: cce-spin 0.6s linear infinite;
-    vertical-align: middle;
+    box-sizing: border-box;
+    animation: cce-spin .6s linear infinite;
+    vertical-align: text-bottom;
 }
 
 @keyframes cce-spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-.cceverywhere_action_desc {
-    font-weight: normal;
-    font-size: 0.7rem;
-    opacity: 0.7;
-    font-style: italic;
-    display: block;
-    margin-top: 5px;
+    from { transform: rotate( 0deg ); }
+    to { transform: rotate( 360deg ); }
 }

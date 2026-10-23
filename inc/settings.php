@@ -55,6 +55,10 @@ class Settings {
         // Admin theme colors
         add_filter( 'cceverywhere_theme_colors', [ $this, 'inherit_ahd_colors' ] );
 
+        // Subheader buttons for the Settings tab
+        add_action( 'cceverywhere_subheader_left', [ $this, 'render_subheader_left' ] );
+        add_action( 'cceverywhere_subheader_right', [ $this, 'render_subheader_right' ] );
+
         // Ajax
         add_action( 'wp_ajax_cceverywhere_save_settings', [ $this, 'ajax_save_settings' ] );
 
@@ -62,6 +66,74 @@ class Settings {
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
 
     } // End init()
+
+
+    /**
+     * Header tabs
+     *
+     * @return array
+     */
+    public static function get_tabs() {
+        return [
+            'settings' => __( 'Settings', 'clear-cache-everywhere' ),
+            'logs'     => __( 'Logs', 'clear-cache-everywhere' ),
+        ];
+    } // End get_tabs()
+
+
+    /**
+     * Get the current tab
+     *
+     * @return string
+     */
+    public static function get_current_tab() {
+        $tab = isset( $_GET[ 'tab' ] ) ? sanitize_key( wp_unslash( $_GET[ 'tab' ] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only tab selector.
+        return array_key_exists( $tab, self::get_tabs() ) ? $tab : 'settings';
+    } // End get_current_tab()
+
+
+    /**
+     * Get a tab URL
+     *
+     * @param string $tab
+     * @return string
+     */
+    public static function tab_url( $tab ) {
+        return 'settings' === $tab ? CCEVERYWHERE_SETTINGS_PATH : add_query_arg( 'tab', $tab, CCEVERYWHERE_SETTINGS_PATH );
+    } // End tab_url()
+
+
+    /**
+     * Render the Save button and reminder on the Settings tab
+     *
+     * @param string $tab
+     * @return void
+     */
+    public function render_subheader_left( $tab ) {
+        if ( 'settings' !== $tab ) {
+            return;
+        }
+        ?>
+        <button type="button" id="cceverywhere-save-settings" class="cceverywhere-button"><?php esc_html_e( 'Save', 'clear-cache-everywhere' ); ?></button>
+        <span id="cceverywhere-save-reminder"><?php esc_html_e( 'Remember to click "Save" after making changes to your settings.', 'clear-cache-everywhere' ); ?></span>
+        <?php
+    } // End render_subheader_left()
+
+
+    /**
+     * Render the Clear All Cache Now button on the Settings tab
+     *
+     * @param string $tab
+     * @return void
+     */
+    public function render_subheader_right( $tab ) {
+        if ( 'settings' !== $tab ) {
+            return;
+        }
+        ?>
+        <button type="button" id="cce-clear-cache-btn" class="cceverywhere-button"><?php esc_html_e( 'Clear All Cache Now', 'clear-cache-everywhere' ); ?></button>
+        <?php
+    } // End render_subheader_right()
 
 
 	/**
@@ -92,6 +164,11 @@ class Settings {
             return;
         }
 
+        if ( 'logs' === self::get_current_tab() ) {
+            Logs::render_page();
+            return;
+        }
+
         $last_results = get_option( 'clear_cache_everywhere_last_results', [] );
         $clearing_actions = ( new Clear() )->get_clearing_actions();
         $total_elapsed = 0;
@@ -107,9 +184,10 @@ class Settings {
         ?>
         <div class="wrap cceverywhere-wrap">
             <hr class="wp-header-end">
-            <div class="cceverywhere-content-wrap">
-                <div class="cceverywhere-box">
+            <form id="cceverywhere-settings-form" method="post" class="cceverywhere-settings-grid">
+                <section class="cceverywhere-box cceverywhere-box-wide">
                     <div class="cceverywhere-box-body">
+                        <p class="cceverywhere-section-desc"><?php esc_html_e( 'Check the items you want cleared by the Clear All Cache Now button and the admin bar link. Use the Clear button next to any item to run it on its own.', 'clear-cache-everywhere' ); ?></p>
                         <div id="cce-clear-cache-result">
                             <?php if ( $total_elapsed > 0 ) : ?>
                                 <?php
@@ -120,16 +198,13 @@ class Settings {
                                 ) );
                                 ?>
                             <?php else : ?>
-                                <?php esc_html_e( 'No enabled clearing actions have been run. You may clear all using the Clear Cache Now button, or individually using the buttons below.', 'clear-cache-everywhere' ); ?>
+                                <?php esc_html_e( 'No enabled clearing actions have been run. You may clear all using the Clear All Cache Now button, or individually using the buttons below.', 'clear-cache-everywhere' ); ?>
                             <?php endif; ?>
                         </div>
-                        <h2><?php esc_html_e( 'Choose below which items you want to clear with the Clear Cache Now button and Admin Bar link.', 'clear-cache-everywhere' ); ?></h2>
-                        <form id="cceverywhere-settings-form" method="post">
-                            <?php do_settings_sections( CCEVERYWHERE_TEXTDOMAIN ); ?>
-                        </form>
                     </div>
-                </div>
-            </div>
+                </section>
+                <?php $this->render_sections(); ?>
+            </form>
         </div>
         <?php
     } // End page()
@@ -705,6 +780,37 @@ class Settings {
         // Apply filter to allow developers to add custom fields
         $fields = apply_filters( 'cceverywhere_custom_settings', $fields );
 
+        // Logs (added after the filter so they always render last)
+        $fields[] = [
+            'key'      => 'log_retention',
+            'title'    => __( 'Clear Logs After (Days)', 'clear-cache-everywhere' ),
+            'type'     => 'number',
+            'sanitize' => 'absint',
+            'section'  => 'logs',
+            'default'  => Logs::DEFAULT_RETENTION,
+            'min'      => 0,
+            'max'      => 3650,
+            'comments' => __( 'Log entries older than this are deleted once a day. Enter 0 to keep logs forever.', 'clear-cache-everywhere' ),
+        ];
+        $fields[] = [
+            'key'      => 'log_success',
+            'title'    => __( 'Log Successful Clears', 'clear-cache-everywhere' ),
+            'type'     => 'checkbox',
+            'sanitize' => 'sanitize_checkbox',
+            'section'  => 'logs',
+            'default'  => FALSE,
+            'comments' => __( 'Failures are always logged. Turn this off to skip successful, info, and skipped results and keep the logs shorter.', 'clear-cache-everywhere' ),
+        ];
+        $fields[] = [
+            'key'      => 'console_log',
+            'title'    => __( 'Log Responses to the Browser Console', 'clear-cache-everywhere' ),
+            'type'     => 'checkbox',
+            'sanitize' => 'sanitize_checkbox',
+            'section'  => 'logs',
+            'default'  => TRUE,
+            'comments' => __( 'For troubleshooting. Prints the data returned by each clearing request to the browser console.', 'clear-cache-everywhere' ),
+        ];
+
         // Return
         if ( $return_keys_only ) {
             $field_keys = [];
@@ -718,269 +824,249 @@ class Settings {
 
 
     /**
-     * Settings fields
+     * Settings panels in display order. Each panel can combine several sections.
+     * Logs follows Integrations so the two share a row.
+     *
+     * @return array panel key => [ title, section keys ]
+     */
+    public function get_panels() {
+        return [
+            'defaults'     => [ __( 'Defaults', 'clear-cache-everywhere' ), [ 'defaults' ] ],
+            'hosting'      => [ __( 'Hosting & CDN', 'clear-cache-everywhere' ), [ 'hosting', 'cdn' ] ],
+            'integrations' => [ __( 'Integrations', 'clear-cache-everywhere' ), [ 'integrations' ] ],
+            'logs'         => [ __( 'Logs', 'clear-cache-everywhere' ), [ 'logs' ] ],
+            'custom'       => [ __( 'Custom', 'clear-cache-everywhere' ), [ 'custom' ] ],
+        ];
+    } // End get_panels()
+
+
+    /**
+     * Register the settings so update_option() runs each field's sanitizer
      *
      * @return void
      */
     public function settings_fields() {
-        // Slug
-        $slug = CCEVERYWHERE_TEXTDOMAIN;
+        foreach ( $this->get_settings_fields() as $field ) {
+            $sanitize = $field[ 'sanitize' ] ?? '';
 
-        // Fields
-        $fields = $this->get_settings_fields( false );
-
-        /**
-         * Sections
-         */
-        $settings_sections = [
-            [ 'defaults', __( 'Defaults', 'clear-cache-everywhere' ), '' ],
-            [ 'hosting', __( 'Hosting', 'clear-cache-everywhere' ), '' ],
-            [ 'cdn', __( 'CDN', 'clear-cache-everywhere' ), '' ],
-            [ 'integrations', __( 'Integrations', 'clear-cache-everywhere' ), '' ],
-            [ 'custom', __( 'Custom', 'clear-cache-everywhere' ), '' ],
-        ];
-
-        // Only include sections with fields
-        $settings_sections_to_add = [];
-        foreach ( $settings_sections as $settings_section ) {
-            $section_key = $settings_section[0];
-            
-            // Check if any fields exist for the section
-            $section_fields = array_filter( $fields, function( $field ) use ( $section_key ) {
-                return isset( $field[ 'section' ] ) && $field[ 'section' ] === $section_key;
-            });
-
-            // If there are fields for this section, add the section to the settings sections
-            if ( ! empty( $section_fields ) ) {
-                $settings_sections_to_add[] = $settings_section;
-            }
-        }
-
-        // Iter the filtered sections
-        foreach ( $settings_sections_to_add as $settings_section ) {
-            add_settings_section(
-                $settings_section[0],
-                $settings_section[1] . ':',
-                $settings_section[2],
-                $slug
-            );
-        }
-        
-        /**
-         * Fields
-         */
-        // Iter the fields
-        foreach ( $fields as $field ) {
-            $option_name = CCEVERYWHERE__TEXTDOMAIN.'_'.$field[ 'key' ];
-            $callback = 'settings_field_'.$field[ 'type' ];
-            $args = [
-                'id'    => $option_name,
-                'class' => $option_name,
-                'name'  => $option_name,
-                'key'   => $field[ 'key' ],
-            ];
-
-            // Add comments
-            if ( isset( $field[ 'comments' ] ) && $field[ 'comments' ] != '' ) {
-                $comments = '<br><span class="cceverywhere_action_desc">' . $field[ 'comments' ] . '</span>';
+            if ( $sanitize && method_exists( $this, $sanitize ) ) {
+                $callback = [ $this, $sanitize ];
+            } elseif ( $sanitize && is_callable( $sanitize ) ) {
+                $callback = $sanitize;
             } else {
-                $comments = '';
-            }
-            
-            // Add select options
-            if ( isset( $field[ 'options' ] ) ) {
-                $args[ 'options' ] = $field[ 'options' ];
+                $callback = null;
             }
 
-            // Add default
-            if ( isset( $field[ 'default' ] ) ) {
-                $args[ 'default' ] = $field[ 'default' ];
-            }
-
-            // Add revert
-            if ( isset( $field[ 'revert' ] ) ) {
-                $args[ 'revert' ] = $field[ 'revert' ];
-            }
-
-            // Add run context
-            if ( isset( $field[ 'run_context' ] ) ) {
-                $args[ 'run_context' ] = $field[ 'run_context' ];
-            }
-
-            // Add the field
-            register_setting( $slug, $option_name, sanitize_key( $field[ 'sanitize' ] ) );
-            add_settings_field( $option_name, $field[ 'title' ] . wp_kses_post( $comments ), [ $this, $callback ], $slug, $field[ 'section' ], $args );
+            register_setting( CCEVERYWHERE_TEXTDOMAIN, CCEVERYWHERE__TEXTDOMAIN . '_' . $field[ 'key' ], [ 'sanitize_callback' => $callback ] );
         }
     } // End settings_fields()
-  
-    
-    /**
-     * Custom callback function to print text field
-     *
-     * @param array $args
-     * @return void
-     */
-    public function settings_field_text( $args ) {
-        $width = isset( $args[ 'width' ] ) ? $args[ 'width' ] : '43rem';
-        $default = isset( $args[ 'default' ] )  ? $args[ 'default' ] : '';
-        $value = get_option( $args[ 'name' ], $default );
-        if ( isset( $args[ 'revert' ] ) && $args[ 'revert' ] == true && trim( $value ) == '' ) {
-            $value = $default;
-        }
-        $comments = isset( $args[ 'comments' ] ) ? '<br><p class="description">' . $args[ 'comments' ] . '</p>' : '';
-
-        printf(
-            '<input type="text" id="%s" name="%s" value="%s" style="width: %s;" />%s',
-            esc_attr( $args[ 'id' ] ),
-            esc_attr( $args[ 'name' ] ),
-            esc_html( $value ),
-            esc_attr( $width ),
-            wp_kses_post( $comments )
-        );
-    } // settings_field_text()
 
 
     /**
-     * Custom callback function to print password field
+     * Render each panel that has fields as a box
      *
-     * @param array $args
      * @return void
      */
-    public function settings_field_password( $args ) {
-        $width = isset( $args[ 'width' ] ) ? $args[ 'width' ] : '43rem';
-        $default = isset( $args[ 'default' ] )  ? $args[ 'default' ] : '';
-        $value = get_option( $args[ 'name' ], $default );
-        if ( isset( $args[ 'revert' ] ) && $args[ 'revert' ] == true && trim( $value ) == '' ) {
-            $value = $default;
-        }
-        $comments = isset( $args[ 'comments' ] ) ? '<br><p class="description">' . $args[ 'comments' ] . '</p>' : '';
+    public function render_sections() {
+        $fields = $this->get_settings_fields();
 
-        printf(
-            '<input type="password" id="%s" name="%s" value="%s" style="width: %s;" />%s',
-            esc_attr( $args[ 'id' ] ),
-            esc_attr( $args[ 'name' ] ),
-            esc_html( $value ),
-            esc_attr( $width ),
-            wp_kses_post( $comments )
-        );
-    } // settings_field_password()
+        foreach ( $this->get_panels() as $panel_key => $panel ) {
+            $panel_fields = [];
 
-
-    /**
-     * Custom callback function to print checkbox field
-     *
-     * @param array $args
-     * @return void
-     */
-    public function settings_field_checkbox( $args ) {
-        $value = get_option( $args[ 'name' ] );
-        if ( false === $value && isset( $args[ 'default' ] ) ) {
-            $value = $args[ 'default' ];
-        }
-        $value = $this->sanitize_checkbox( $value );
-
-        // Output the checkbox
-        printf(
-            '<div class="cce-action-container"><input type="checkbox" id="%s" name="%s" value="1" %s/>',
-            esc_attr( $args[ 'name' ] ),
-            esc_attr( $args[ 'name' ] ),
-            checked( 1, $value, false )
-        );
-
-        // Add the "Clear" button and result container for actions with run_context
-        if ( isset( $args[ 'run_context' ] ) && isset( $args[ 'key' ] ) ) {
-            $key = $args[ 'key' ];
-
-            printf(
-                ' <button type="button" class="cceverywhere-button cce-run-action-btn" data-key="%s">%s</button>',
-                esc_attr( $key ),
-                esc_html__( 'Clear', 'clear-cache-everywhere' )
-            );
-
-            // Determine if page query params exist and match this field
-            $show_finalizing = false;
-            if ( isset( $_GET[ 'cce_run_page' ] ) && $args[ 'run_context' ] === 'page' ) {
-                $show_finalizing = true;
-            } elseif ( isset( $_GET[ 'cce_run_single_page' ] ) && $_GET[ 'cce_run_single_page' ] === '1' ) {
-                if ( isset( $_GET[ 'key' ] ) && $_GET[ 'key' ] === $key ) {
-                    $show_finalizing = true;
-                }
-            }
-
-            // Result text and class
-            $result_text = '';
-            $result_class = '';
-
-            if ( $show_finalizing ) {
-                $result_text = __( 'Finalizing...', 'clear-cache-everywhere' );
-            } else {
-                $last_results = get_option( 'clear_cache_everywhere_last_results', [] );
-
-                if ( isset( $last_results[ $key ] ) ) {
-                    $res = $last_results[ $key ];
-
-                    if ( $res[ 'status' ] === 'running' && empty( $res[ 'end' ] ) ) {
-                        $result_class = 'fail';
-                        $result_text = __( 'Could not complete. Something went wrong.', 'clear-cache-everywhere' );
-                    } elseif ( ! empty( $res[ 'end' ] ) ) {
-                        $result_class = $res[ 'status' ] ?? 'fail';
-                        $date_format = get_option( 'date_format' );
-                        $time_format = get_option( 'time_format' );
-
-                        $end_ts = (int) floor( $res[ 'end' ] );
-
-                        $datetime = wp_date( $date_format . ' \a\t ' . $time_format, $end_ts );
-
-                        $label = $res[ 'status' ] === 'success'
-                            ? __( 'Last cleared on %s', 'clear-cache-everywhere' )
-                            : __( 'Last attempted on %s', 'clear-cache-everywhere' );
-
-                        $result_text = sprintf( $label, $datetime );
-
-                        // append elapsed seconds if start is available
-                        if ( ! empty( $res[ 'start' ] ) ) {
-                            $elapsed = $res[ 'end' ] - $res[ 'start' ];
-                            $result_text .= ' (' . number_format( $elapsed, 3 ) . 's)';
-                        }
-
-                        if ( $res[ 'status' ] !== 'info' ) {
-                            $result_text .= ' - ' . strtoupper( $res[ 'status' ] );
-                        }
-
-                        if ( ! empty( $res[ 'error_message' ] ) ) {
-                            $result_text .= ' - ' . $res[ 'error_message' ];
-                        }
+            foreach ( $panel[ 1 ] as $section_key ) {
+                foreach ( $fields as $field ) {
+                    if ( isset( $field[ 'section' ] ) && $field[ 'section' ] === $section_key ) {
+                        $panel_fields[] = $field;
                     }
                 }
             }
 
-            // Run context class
-            $run_context_class = 'run-context-' . esc_attr( $args[ 'run_context' ] );
-            $enabled_class = $value ? 'enabled' : 'disabled';
+            if ( empty( $panel_fields ) ) {
+                continue;
+            }
 
-            // Result container
-            printf(
-                '<div class="cce-action-result %s %s %s" id="cce-action-result-%s">%s</div>',
-                esc_attr( $result_class ),
-                esc_attr( $run_context_class ),
-                esc_attr( $enabled_class ),
-                esc_attr( $key ),
-                esc_html( $result_text )
-            );
+            $groups = [];
+            foreach ( $panel_fields as $field ) {
+                if ( 'checkbox' === $field[ 'type' ] || empty( $groups ) ) {
+                    $groups[] = [];
+                }
+                $groups[ count( $groups ) - 1 ][] = $field;
+            }
+            ?>
+            <section class="cceverywhere-box" id="cceverywhere-section-<?php echo esc_attr( $panel_key ); ?>">
+                <div class="cceverywhere-box-header"><h2><?php echo esc_html( $panel[ 0 ] ); ?></h2></div>
+                <div class="cceverywhere-box-body">
+                    <?php foreach ( $groups as $group ) : ?>
+                        <div class="cceverywhere-field-group<?php echo count( $group ) > 1 ? ' has-extra' : ''; ?>">
+                            <?php
+                            foreach ( $group as $field ) {
+                                $this->render_field( $field );
+                            }
+                            ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </section>
+            <?php
+        }
+    } // End render_sections()
+
+
+    /**
+     * Print a help tooltip
+     *
+     * @param string $text
+     * @return void
+     */
+    public function tooltip( $text ) {
+        if ( '' === trim( (string) $text ) ) {
+            return;
+        }
+        ?>
+        <span class="cceverywhere-tooltip" tabindex="0">
+            <span class="dashicons dashicons-editor-help" aria-hidden="true"></span>
+            <span class="cceverywhere-tooltip-text" role="tooltip"><?php echo wp_kses_post( $text ); ?></span>
+        </span>
+        <?php
+    } // End tooltip()
+
+
+    /**
+     * Render one settings field
+     *
+     * @param array $field
+     * @return void
+     */
+    public function render_field( $field ) {
+        $name = CCEVERYWHERE__TEXTDOMAIN . '_' . $field[ 'key' ];
+        $default = $field[ 'default' ] ?? '';
+        $comments = $field[ 'comments' ] ?? '';
+
+        if ( 'checkbox' === $field[ 'type' ] ) {
+            $value = get_option( $name );
+            if ( false === $value ) {
+                $value = $default;
+            }
+            $value = $this->sanitize_checkbox( $value );
+            $run_context = $field[ 'run_context' ] ?? '';
+            ?>
+            <div class="cceverywhere-field cceverywhere-field-checkbox">
+                <div class="cceverywhere-field-row">
+                    <label class="cceverywhere-inline-label">
+                        <input type="checkbox" id="<?php echo esc_attr( $name ); ?>" name="<?php echo esc_attr( $name ); ?>" value="1" <?php checked( $value ); ?>>
+                        <?php echo esc_html( wp_strip_all_tags( $field[ 'title' ] ) ); ?>
+                        <?php $this->tooltip( $comments ); ?>
+                    </label>
+                    <?php if ( $run_context ) : ?>
+                        <button type="button" class="cceverywhere-button cceverywhere-button-small cce-run-action-btn" data-key="<?php echo esc_attr( $field[ 'key' ] ); ?>"><?php esc_html_e( 'Clear', 'clear-cache-everywhere' ); ?></button>
+                    <?php endif; ?>
+                </div>
+                <?php
+                if ( $run_context ) {
+                    $result = $this->get_action_result( $field[ 'key' ], $run_context, (bool) $value );
+                    $spinner = 'running' === $result[ 'class' ] ? ' <span class="cce-loading-spinner"></span>' : '';
+                    printf(
+                        '<div class="cce-action-result %s %s %s" id="cce-action-result-%s">%s%s</div>',
+                        esc_attr( $result[ 'class' ] ),
+                        esc_attr( 'run-context-' . $run_context ),
+                        esc_attr( $value ? 'enabled' : 'disabled' ),
+                        esc_attr( $field[ 'key' ] ),
+                        esc_html( $result[ 'text' ] ),
+                        $spinner // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed markup.
+                    );
+                }
+                ?>
+            </div>
+            <?php
+            return;
         }
 
-        echo '</div>';
-    } // End settings_field_checkbox()
+        $value = get_option( $name, $default );
+        if ( ! empty( $field[ 'revert' ] ) && '' === trim( (string) $value ) ) {
+            $value = $default;
+        }
+        $type = in_array( $field[ 'type' ], [ 'text', 'password', 'number' ], true ) ? $field[ 'type' ] : 'text';
+        ?>
+        <div class="cceverywhere-field">
+            <label for="<?php echo esc_attr( $name ); ?>"><?php echo esc_html( wp_strip_all_tags( $field[ 'title' ] ) ); ?> <?php $this->tooltip( $comments ); ?></label>
+            <input type="<?php echo esc_attr( $type ); ?>" id="<?php echo esc_attr( $name ); ?>" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( (string) $value ); ?>"<?php echo isset( $field[ 'min' ] ) ? ' min="' . esc_attr( (string) $field[ 'min' ] ) . '"' : ''; ?><?php echo isset( $field[ 'max' ] ) ? ' max="' . esc_attr( (string) $field[ 'max' ] ) . '"' : ''; ?><?php echo 'password' === $type ? ' autocomplete="new-password"' : ''; ?>>
+        </div>
+        <?php
+    } // End render_field()
+
+
+    /**
+     * Get the last result text and class for an action
+     *
+     * @param string $key
+     * @param string $run_context
+     * @param bool $enabled
+     * @return array [ 'text' => string, 'class' => string ]
+     */
+    public function get_action_result( $key, $run_context, $enabled = true ) {
+        $show_finalizing = false;
+        if ( $enabled && isset( $_GET[ 'cce_run_page' ] ) && 'page' === $run_context ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only.
+            $show_finalizing = true;
+        } elseif ( isset( $_GET[ 'cce_run_single_page' ], $_GET[ 'key' ] ) && '1' === $_GET[ 'cce_run_single_page' ] && $key === $_GET[ 'key' ] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display only.
+            $show_finalizing = true;
+        }
+
+        if ( $show_finalizing ) {
+            return [ 'text' => __( 'Finalizing...', 'clear-cache-everywhere' ), 'class' => 'running' ];
+        }
+
+        $last_results = get_option( 'clear_cache_everywhere_last_results', [] );
+
+        if ( ! isset( $last_results[ $key ] ) ) {
+            return [ 'text' => __( 'Never ran.', 'clear-cache-everywhere' ), 'class' => '' ];
+        }
+
+        $res = $last_results[ $key ];
+
+        if ( 'running' === $res[ 'status' ] && empty( $res[ 'end' ] ) ) {
+            return [ 'text' => __( 'Could not complete. Something went wrong. Check the Logs tab.', 'clear-cache-everywhere' ), 'class' => 'fail' ];
+        }
+
+        if ( empty( $res[ 'end' ] ) ) {
+            return [ 'text' => __( 'Never ran.', 'clear-cache-everywhere' ), 'class' => '' ];
+        }
+
+        $datetime = wp_date( get_option( 'date_format' ) . ' \a\t ' . get_option( 'time_format' ), (int) floor( $res[ 'end' ] ) );
+
+        if ( 'success' === $res[ 'status' ] ) {
+            /* translators: %s: date and time */
+            $text = sprintf( __( 'Last cleared on %s', 'clear-cache-everywhere' ), $datetime );
+        } else {
+            /* translators: %s: date and time */
+            $text = sprintf( __( 'Last attempted on %s', 'clear-cache-everywhere' ), $datetime );
+        }
+
+        if ( ! empty( $res[ 'start' ] ) ) {
+            $text .= ' (' . number_format( $res[ 'end' ] - $res[ 'start' ], 3 ) . 's)';
+        }
+
+        if ( 'info' !== $res[ 'status' ] ) {
+            $text .= ' - ' . strtoupper( $res[ 'status' ] );
+        }
+
+        if ( ! empty( $res[ 'error_message' ] ) ) {
+            $text .= ' - ' . $res[ 'error_message' ];
+        }
+
+        return [ 'text' => $text, 'class' => $res[ 'status' ] ?? 'fail' ];
+    } // End get_action_result()
 
 
     /**
      * Sanitize checkbox
      *
-     * @param int $value
-     * @return boolean
+     * Returns 1 or 0 (not true/false) so an unchecked box is still saved; update_option() skips false when the option doesn't exist yet.
+     *
+     * @param mixed $value
+     * @return int
      */
     public function sanitize_checkbox( $value ) {
-        return filter_var( $value, FILTER_VALIDATE_BOOLEAN );
+        return filter_var( $value, FILTER_VALIDATE_BOOLEAN ) ? 1 : 0;
     } // End sanitize_checkbox()
 
 
@@ -1016,11 +1102,13 @@ class Settings {
             return $colors;
         }
         $map = [
-            'header_bg'    => 'header-bg',
-            'header_font'  => 'header-font',
-            'button'       => 'button',
-            'button_font'  => 'button-font',
-            'button_hover' => 'button-hover',
+            'header_bg'       => 'header-bg',
+            'header_font'     => 'header-font',
+            'header_tab'      => 'header-tab',
+            'header_tab_link' => 'header-tab-link',
+            'button'          => 'button',
+            'button_font'     => 'button-font',
+            'button_hover'    => 'button-hover',
         ];
         foreach ( $map as $ahd_key => $cce_key ) {
             if ( ! empty( $ahd_colors[ $ahd_key ] ) ) {
@@ -1087,6 +1175,10 @@ class Settings {
         }
         if ( ! empty( $declarations ) ) {
             wp_add_inline_style( $theme_handle, ':root {' . implode( '', $declarations ) . '}' );
+        }
+
+        if ( 'settings' !== self::get_current_tab() ) {
+            return;
         }
 
         wp_enqueue_style( CCEVERYWHERE_TEXTDOMAIN . '-settings', CCEVERYWHERE_CSS_PATH . 'settings.css', [ $theme_handle ], CCEVERYWHERE_SCRIPT_VERSION );

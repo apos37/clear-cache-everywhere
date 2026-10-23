@@ -1,0 +1,62 @@
+/* Clear Cache Everywhere: Logs tab */
+
+.cceverywhere-logs .tablenav .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.cceverywhere-logs .tablenav.top {
+    height: auto;
+}
+
+.cceverywhere-logs .column-created_at {
+    width: 170px;
+}
+
+.cceverywhere-logs .column-status {
+    width: 110px;
+}
+
+.cceverywhere-logs .column-action_title,
+.cceverywhere-logs .column-context {
+    width: 14%;
+}
+
+.cceverywhere-logs .column-duration {
+    width: 90px;
+}
+
+.cceverywhere-logs .column-user_id {
+    width: 170px;
+}
+
+/* #the-list beats the core rule that removes shadows from the last row */
+.cceverywhere-logs #the-list tr.cceverywhere-log-fail > :first-child {
+    box-shadow: inset 4px 0 0 #f04438;
+}
+
+.cceverywhere-log-details {
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 140px;
+    overflow: auto;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.cceverywhere-log-search {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+#cceverywhere-logs-status {
+    font-weight: 600;
+    color: var( --cceverywhere-ok );
+}
+
+#cceverywhere-logs-status.is-error {
+    color: var( --cceverywhere-error );
+}

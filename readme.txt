@@ -4,7 +4,7 @@ Tags: cache, clear cache, flush cache, performance, admin bar
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.4
+Stable tag: 1.2.5
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.txt
 
@@ -136,12 +136,24 @@ We recommend using our [website support forum](https://pluginrx.com/support/plug
 https://youtu.be/wjCEGl2sSzQ
 
 == Screenshots ==
-
 1. Settings page and admin bar button.
 
 == Changelog ==
-= 1.2.5 = // TODO:
+= 1.2.5 =
+* Fix: Clear All no longer freezes when an action returns an HTTP error such as a 500. It now records the error and continues to the next action
 * Fix: WP Engine cache clearing failed with a "Class not found" error. The call to the global WpeCommon class is now fully qualified.
+* Fix: An action that saved a success but whose response then failed (for example, a 500 after flushing Redis/Memcached) is now recorded as a failure instead of showing as successful after the page reloads
+* Fix: Fatal errors that happen while an action runs, or in the hooks right after it, are now captured with the file and line
+* Fix: Clearing Fragment Cache and REST API Cache now deletes in batches and never touches this plugin's own options, which could cause timeouts and 500 errors on large sites
+* Fix: Unchecking a checkbox that is on by default now saves correctly
+* Update: Added a Logs tab with filters, search, bulk delete, and Clear All / Clear All Success buttons. Failures include the HTTP status, PHP error, and environment details (PHP, WordPress, memory limit, execution time)
+* Update: Added Logs settings: Clear Logs After (Days), Log Successful Clears, and Log Responses to the Browser Console
+* Update: Added Settings and Logs tabs to the header
+* Update: Setting descriptions moved to tooltips and fields restyled to match our other plugins
+* Update: Every action now shows a persistent status row ("Never ran." or the last result), and a spinner shows while an action is running or finalizing
+* Tweak: Renamed the button to Clear All Cache Now
+* Tweak: Added more spacing between the settings header and content, and between result rows and the next option
+* Tweak: Settings assets now load only on the Settings tab
 
 = 1.2.4 =
 * Update: Added Seraphinite Accelerator integration

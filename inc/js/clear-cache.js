@@ -1,7 +1,4 @@
 jQuery( $ => {
-    // console.log( 'Clear Cache Everywhere Clearing JS Loaded...' );
-
-    // Utility function to format cache clearing messages
     function formatCacheMessage( data ) {
         if ( ! data || ! data.status ) return '';
 
@@ -26,13 +23,27 @@ jQuery( $ => {
         return { msg, statusClass };
     }
 
-    // Run one AJAX action. Always resolves with { statusClass, msg }, even on HTTP errors
-    function postAction( key ) {
+    function debugLog( label, data ) {
+        if ( ! cceverywhere_ajax.console_log || ! window.console ) {
+            return;
+        }
+
+        if ( typeof data === 'undefined' ) {
+            console.log( '[Clear Cache Everywhere]', label );
+            return;
+        }
+
+        console.log( '[Clear Cache Everywhere]', label, data );
+    }
+
+    function postAction( key, source ) {
         return $.post( cceverywhere_ajax.ajax_url, {
             action: 'cceverywhere_clear_ajax_action',
             nonce: cceverywhere_ajax.nonce,
-            key: key
+            key: key,
+            source: source
         } ).then( response => {
+            debugLog( key, response );
             if ( response.success ) {
                 return formatCacheMessage( response.data );
             }
@@ -45,14 +56,14 @@ jQuery( $ => {
                 action: 'cceverywhere_log_client_error',
                 nonce: cceverywhere_ajax.nonce,
                 key: key,
+                source: source,
                 http_status: jqXHR.status,
                 detail: detail
             } ).then( () => result, () => result );
         } );
     }
 
-    // Run a list of actions in order, continuing past failures
-    function runActions( actions, hooks ) {
+    function runActions( actions, source, hooks ) {
         const failures = [];
         let index = 0;
 
@@ -72,7 +83,7 @@ jQuery( $ => {
 
             hooks.start( action );
 
-            postAction( action.key ).then( result => {
+            postAction( action.key, source ).then( result => {
                 if ( result.statusClass === 'fail' ) {
                     failures.push( action.title );
                 }
@@ -84,23 +95,29 @@ jQuery( $ => {
         next();
     }
 
+    const resultClasses = 'success fail info skipped running';
+
+    function setRunning( resultDiv, html ) {
+        resultDiv.removeClass( resultClasses ).addClass( 'running' ).html( html );
+    }
+
+    function setResult( resultDiv, statusClass, text ) {
+        resultDiv.removeClass( resultClasses ).addClass( statusClass ).text( text );
+    }
+
     function pageActionsUrl() {
         return window.location.href + ( window.location.href.includes( '?' ) ? '&' : '?' ) + 'cce_run_page=1';
     }
 
-    // Settings page functionality
     if ( cceverywhere_ajax.is_settings_page ) {
         const btn = $( 'button#cce-clear-cache-btn' );
         const mainResultDiv = $( '#cce-clear-cache-result' );
 
-        // Clear All button click
         btn.on( 'click', function( e ) {
             e.preventDefault();
             btn.prop( 'disabled', true );
             $( '.cce-run-action-btn' ).prop( 'disabled', true );
             mainResultDiv.html( '' );
-
-            $( '.cce-action-result' ).removeClass( 'success fail info' ).text( '' );
 
             const ajaxActions = cceverywhere_ajax.clearing_actions.filter( f => f.run_context === 'ajax' );
             if ( ! ajaxActions.length ) {
@@ -110,24 +127,22 @@ jQuery( $ => {
                 return;
             }
 
-            runActions( ajaxActions, {
+            runActions( ajaxActions, 'settings', {
                 start: action => {
                     mainResultDiv.html( `${ cceverywhere_ajax.text.clearing_cache } ${ action.title }... <span class="cce-loading-spinner"></span><br>${ cceverywhere_ajax.text.please_wait }` );
-                    $( '#cce-action-result-' + action.key ).removeClass( 'success fail info' ).text( `${ cceverywhere_ajax.text.clearing_cache } ${ action.title }...` );
+                    setRunning( $( '#cce-action-result-' + action.key ), `${ cceverywhere_ajax.text.clearing_cache } ${ action.title }... <span class="cce-loading-spinner"></span>` );
                 },
                 finish: ( action, result ) => {
-                    $( '#cce-action-result-' + action.key ).addClass( result.statusClass ).text( result.msg );
+                    setResult( $( '#cce-action-result-' + action.key ), result.statusClass, result.msg );
                 },
                 done: failures => {
                     const reload = () => {
-                        $( '.cce-action-result.run-context-page.enabled' )
-                            .removeClass( 'success fail info' )
-                            .html( `${ cceverywhere_ajax.text.page_reload } <span class="cce-loading-spinner"></span>` );
+                        setRunning( $( '.cce-action-result.run-context-page.enabled' ), `${ cceverywhere_ajax.text.page_reload } <span class="cce-loading-spinner"></span>` );
                         window.location.href = pageActionsUrl();
                     };
 
                     if ( failures.length ) {
-                        mainResultDiv.text( `Completed with ${ failures.length } failure(s): ${ failures.join( ', ' ) }. Reloading...` );
+                        mainResultDiv.text( cceverywhere_ajax.text.completed_with.replace( '%1$d', failures.length ).replace( '%2$s', failures.join( ', ' ) ) );
                         setTimeout( reload, 3000 );
                         return;
                     }
@@ -138,7 +153,6 @@ jQuery( $ => {
             } );
         } );
 
-        // Individual "Run Independently" buttons
         $( '.cce-run-action-btn' ).on( 'click', function( e ) {
             e.preventDefault();
             const btn = $( this );
@@ -149,28 +163,23 @@ jQuery( $ => {
             const resultDiv = $( '#cce-action-result-' + key );
             btn.prop( 'disabled', true );
 
-            // If it's an AJAX action
             if ( action.run_context === 'ajax' ) {
-                resultDiv.removeClass( 'success fail info' ).html( `${ cceverywhere_ajax.text.clearing_cache } ${ action.title } <span class="cce-loading-spinner"></span>` );
+                setRunning( resultDiv, `${ cceverywhere_ajax.text.clearing_cache } ${ action.title } <span class="cce-loading-spinner"></span>` );
 
-                postAction( key ).then( result => {
-                    resultDiv.removeClass( 'success fail info' ).addClass( result.statusClass ).text( result.msg );
+                postAction( key, 'individual' ).then( result => {
+                    setResult( resultDiv, result.statusClass, result.msg );
                     btn.prop( 'disabled', false );
                 } );
 
-            // If it's a page action
             } else if ( action.run_context === 'page' ) {
-                resultDiv.removeClass( 'success fail info' ).html( `${ cceverywhere_ajax.text.page_reload } <span class="cce-loading-spinner"></span>` );
+                setRunning( resultDiv, `${ cceverywhere_ajax.text.page_reload } <span class="cce-loading-spinner"></span>` );
 
-                // Reload page with single-page action query param
                 const separator = window.location.href.includes( '?' ) ? '&' : '?';
                 window.location.href = window.location.href + separator + 'cce_run_single_page=1&key=' + encodeURIComponent( key );
             }
         } );
-
     }
 
-    // Admin bar button
     const adminBarBtn = $( '#wp-admin-bar-cceverywhere_adminbar_btn' );
     if ( adminBarBtn.length ) {
         adminBarBtn.on( 'click', function( e ) {
@@ -185,9 +194,9 @@ jQuery( $ => {
                 return;
             }
 
-            runActions( ajaxActions, {
-                start: action => console.log( `${ cceverywhere_ajax.text.clearing_cache } ${ action.title }...` ),
-                finish: ( action, result ) => console.log( result.msg ),
+            runActions( ajaxActions, 'admin_bar', {
+                start: action => debugLog( `${ cceverywhere_ajax.text.clearing_cache } ${ action.title }...` ),
+                finish: ( action, result ) => debugLog( action.title, result.msg ),
                 done: failures => {
                     if ( failures.length ) {
                         console.error( 'Clear Cache Everywhere failures:', failures );
@@ -198,7 +207,6 @@ jQuery( $ => {
         } );
     }
 
-    // Handle page-context actions triggered by query params
     const urlParams = new URLSearchParams( window.location.search );
 
     function removeQueryParam( paramRegex ) {
@@ -212,24 +220,22 @@ jQuery( $ => {
 
     if ( cceverywhere_ajax.nonce ) {
 
-        // Run all page-context actions
         if ( urlParams.get( 'cce_run_page' ) === '1' ) {
             $.post( cceverywhere_ajax.ajax_url, {
                 action: 'cceverywhere_run_page_actions',
-                nonce: cceverywhere_ajax.nonce
+                nonce: cceverywhere_ajax.nonce,
+                source: 'page'
             } ).always( function( response ) {
-                console.log( 'Page-context actions completed. Updating results...' );
-                console.log( response );
+                debugLog( 'Page-context actions completed', response );
 
-                // Iterate over all page-context actions and update result divs
                 const pageData = ( response && response.data ) || {};
 
                 cceverywhere_ajax.clearing_actions.forEach( action => {
-                    if ( action.run_context === 'page' ) {
+                    if ( action.run_context === 'page' && action.enabled ) {
                         const resultDiv = $( '#cce-action-result-' + action.key );
-                        const res = pageData[ action.key ] || { status: 'fail', error_message: 'No result returned. Check the browser console and debug log.' };
+                        const res = pageData[ action.key ] || { status: 'fail', error_message: cceverywhere_ajax.text.no_result };
                         const result = formatCacheMessage( res );
-                        resultDiv.removeClass( 'success fail info' ).addClass( result.statusClass ).text( result.msg );
+                        setResult( resultDiv, result.statusClass, result.msg );
                     }
                 } );
 
@@ -237,23 +243,22 @@ jQuery( $ => {
             } );
         }
 
-        // Run single page-context action
         if ( urlParams.get( 'cce_run_single_page' ) === '1' && urlParams.has( 'key' ) ) {
             const key = urlParams.get( 'key' );
 
             $.post( cceverywhere_ajax.ajax_url, {
                 action: 'cceverywhere_run_single_page_action',
                 nonce: cceverywhere_ajax.nonce,
-                key: key
+                key: key,
+                source: 'individual'
             } ).always( function( response ) {
-                const key = urlParams.get( 'key' );
+                debugLog( key, response );
                 const resultDiv = $( '#cce-action-result-' + key );
-                const res = response.data || { status: 'fail', error_message: null };
+                const res = ( response && response.data && response.data.status ) ? response.data : { status: 'fail', error_message: cceverywhere_ajax.text.no_result };
                 const result = formatCacheMessage( res );
-                resultDiv.removeClass( 'success fail info' ).addClass( result.statusClass ).text( result.msg );
+                setResult( resultDiv, result.statusClass, result.msg );
                 removeQueryParam( /([?&])cce_run_single_page=1&key=[^&]+/ );
             } );
         }
     }
-
 } );
