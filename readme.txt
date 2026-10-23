@@ -4,7 +4,7 @@ Tags: cache, clear cache, flush cache, performance, admin bar
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.5.1
+Stable tag: 1.2.5.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.txt
 
@@ -148,6 +148,11 @@ https://youtu.be/wjCEGl2sSzQ
 1. Settings page and admin bar button.
 
 == Changelog ==
+= 1.2.5.2 =
+* Update: Added a "Delete All Data on Uninstall" option in a new Advanced panel. When enabled, deleting the plugin removes its settings, last results, logs table, and scheduled cleanup
+* Update: Added How-To Guide, Developer Docs, and Support buttons and the plugin version to the right side of the Settings subheader
+* Tweak: Moved the Clear All Cache Now button next to the Save button in the Settings subheader
+
 = 1.2.5.1 =
 * Fix: The browser console showed "undefined" after progress messages when logging responses to the console was on
 * Update: IP addresses are no longer stored in the logs. The column is removed from existing log tables automatically

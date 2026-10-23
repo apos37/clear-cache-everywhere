@@ -58,6 +58,7 @@ class Settings {
         // Subheader buttons for the Settings tab
         add_action( 'cceverywhere_subheader_left', [ $this, 'render_subheader_left' ] );
         add_action( 'cceverywhere_subheader_right', [ $this, 'render_subheader_right' ] );
+        add_action( 'cceverywhere_subheader_right', [ $this, 'render_version' ], 5 );
 
         // Ajax
         add_action( 'wp_ajax_cceverywhere_save_settings', [ $this, 'ajax_save_settings' ] );
@@ -104,7 +105,7 @@ class Settings {
 
 
     /**
-     * Render the Save button and reminder on the Settings tab
+     * Render the Clear Cache and Save button and reminder on the Settings tab
      *
      * @param string $tab
      * @return void
@@ -114,6 +115,7 @@ class Settings {
             return;
         }
         ?>
+        <button type="button" id="cce-clear-cache-btn" class="cceverywhere-button"><?php esc_html_e( 'Clear All Cache Now', 'clear-cache-everywhere' ); ?></button>
         <button type="button" id="cceverywhere-save-settings" class="cceverywhere-button"><?php esc_html_e( 'Save', 'clear-cache-everywhere' ); ?></button>
         <span id="cceverywhere-save-reminder"><?php esc_html_e( 'Remember to click "Save" after making changes to your settings.', 'clear-cache-everywhere' ); ?></span>
         <?php
@@ -121,7 +123,7 @@ class Settings {
 
 
     /**
-     * Render the Clear All Cache Now button on the Settings tab
+     * Render the guide, docs and support buttons on the Settings tab
      *
      * @param string $tab
      * @return void
@@ -131,9 +133,27 @@ class Settings {
             return;
         }
         ?>
-        <button type="button" id="cce-clear-cache-btn" class="cceverywhere-button"><?php esc_html_e( 'Clear All Cache Now', 'clear-cache-everywhere' ); ?></button>
+        <a href="<?php echo esc_url( CCEVERYWHERE_GUIDE_URL ); ?>" target="_blank" rel="noopener" class="cceverywhere-button cceverywhere-external-link"><?php esc_html_e( 'How-To Guide', 'clear-cache-everywhere' ); ?> <span class="dashicons dashicons-external" aria-hidden="true"></span></a>
+        <a href="<?php echo esc_url( CCEVERYWHERE_DOCS_URL ); ?>" target="_blank" rel="noopener" class="cceverywhere-button cceverywhere-external-link"><?php esc_html_e( 'Developer Docs', 'clear-cache-everywhere' ); ?> <span class="dashicons dashicons-external" aria-hidden="true"></span></a>
+        <a href="<?php echo esc_url( CCEVERYWHERE_SUPPORT_URL ); ?>" target="_blank" rel="noopener" class="cceverywhere-button cceverywhere-external-link"><?php esc_html_e( 'Support Forum', 'clear-cache-everywhere' ); ?> <span class="dashicons dashicons-external" aria-hidden="true"></span></a>
         <?php
     } // End render_subheader_right()
+
+
+    /**
+     * Render the plugin version in the right subheader on the Settings tab
+     *
+     * @param string $tab
+     * @return void
+     */
+    public function render_version( $tab ) {
+        if ( 'settings' !== $tab ) {
+            return;
+        }
+        ?>
+        <span id="cceverywhere-version"><?php esc_html_e( 'Version', 'clear-cache-everywhere' ); ?> <?php echo esc_html( CCEVERYWHERE_VERSION ); ?></span>
+        <?php
+    } // End render_version()
 
 
 	/**
@@ -810,6 +830,15 @@ class Settings {
             'default'  => TRUE,
             'comments' => __( 'For troubleshooting. Prints the data returned by each clearing request to the browser console.', 'clear-cache-everywhere' ),
         ];
+        $fields[] = [
+            'key'      => 'delete_on_uninstall',
+            'title'    => __( 'Delete All Data on Uninstall', 'clear-cache-everywhere' ),
+            'type'     => 'checkbox',
+            'sanitize' => 'sanitize_checkbox',
+            'section'  => 'advanced',
+            'default'  => FALSE,
+            'comments' => __( 'When the plugin is deleted, permanently remove its settings, last results and logs.', 'clear-cache-everywhere' ),
+        ];
 
         // Return
         if ( $return_keys_only ) {
@@ -836,6 +865,7 @@ class Settings {
             'integrations' => [ __( 'Integrations', 'clear-cache-everywhere' ), [ 'integrations' ] ],
             'logs'         => [ __( 'Logs', 'clear-cache-everywhere' ), [ 'logs' ] ],
             'custom'       => [ __( 'Custom', 'clear-cache-everywhere' ), [ 'custom' ] ],
+            'advanced'     => [ __( 'Advanced', 'clear-cache-everywhere' ), [ 'advanced' ] ],
         ];
     } // End get_panels()
 

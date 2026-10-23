@@ -598,3 +598,23 @@
     padding-top: 30px;
     margin-top: 26px;
 }
+
+.cceverywhere-actions-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+}
+
+.cceverywhere-external-link .dashicons {
+    width: 14px;
+    height: 14px;
+    font-size: 14px;
+    line-height: 14px;
+}
+
+#cceverywhere-version {
+    font-size: 12px;
+    color: var( --cceverywhere-muted );
+    margin-right: 4px;
+}
