@@ -301,8 +301,7 @@ class LogsListTable extends \WP_List_Table {
             case 'user_id':
                 $user = $item->user_id ? get_userdata( (int) $item->user_id ) : false;
                 $name = $user ? $user->display_name : ( $item->user_id ? __( '(deleted user)', 'clear-cache-everywhere' ) : __( 'System', 'clear-cache-everywhere' ) );
-                $ip = '' !== (string) $item->ip_address ? '<br><span class="cceverywhere-muted">' . esc_html( (string) $item->ip_address ) . '</span>' : '';
-                return esc_html( $name ) . $ip;
+                return esc_html( $name );
         }
 
         return '';

@@ -34,7 +34,7 @@ class Logs {
      *
      * @var string
      */
-    const DB_VERSION = '1.0';
+    const DB_VERSION = '1.1';
 
 
     /**
@@ -155,7 +155,6 @@ class Logs {
             duration decimal(10,3) DEFAULT NULL,
             details longtext DEFAULT NULL,
             user_id bigint(20) unsigned DEFAULT NULL,
-            ip_address varchar(45) DEFAULT NULL,
             created_at datetime NOT NULL,
             PRIMARY KEY  (id),
             KEY action_key (action_key),
@@ -163,6 +162,11 @@ class Logs {
             KEY status (status),
             KEY created_at (created_at)
         ) {$charset_collate};" );
+
+        $has_ip = $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM {$table} LIKE %s", 'ip_address' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- custom table.
+        if ( $has_ip ) {
+            $wpdb->query( "ALTER TABLE {$table} DROP COLUMN ip_address" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- custom table.
+        }
 
         update_option( self::DB_VERSION_OPTION, self::DB_VERSION );
         self::$installed = true;
@@ -332,23 +336,11 @@ class Logs {
             'duration'     => $duration,
             'details'      => sanitize_textarea_field( $details ),
             'user_id'      => $user_id ? $user_id : null,
-            'ip_address'   => self::ip(),
             'created_at'   => current_time( 'mysql', true ),
-        ], [ '%s', '%s', '%s', '%s', '%f', '%s', '%d', '%s', '%s' ] ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- custom table.
+        ], [ '%s', '%s', '%s', '%s', '%f', '%s', '%d', '%s' ] ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- custom table.
 
         return $inserted ? (int) $wpdb->insert_id : 0;
     } // End add()
-
-
-    /**
-     * Get the visitor IP address
-     *
-     * @return string
-     */
-    public static function ip() {
-        $ip = isset( $_SERVER[ 'REMOTE_ADDR' ] ) ? sanitize_text_field( wp_unslash( $_SERVER[ 'REMOTE_ADDR' ] ) ) : '';
-        return filter_var( $ip, FILTER_VALIDATE_IP ) ? $ip : '';
-    } // End ip()
 
 
     /**
@@ -385,8 +377,8 @@ class Logs {
 
         if ( ! empty( $filters[ 'search' ] ) ) {
             $like = '%' . $wpdb->esc_like( $filters[ 'search' ] ) . '%';
-            $where[] = '( details LIKE %s OR action_title LIKE %s OR action_key LIKE %s OR ip_address LIKE %s )';
-            array_push( $args, $like, $like, $like, $like );
+            $where[] = '( details LIKE %s OR action_title LIKE %s OR action_key LIKE %s )';
+            array_push( $args, $like, $like, $like );
         }
 
         return [ implode( ' AND ', $where ), $args ];

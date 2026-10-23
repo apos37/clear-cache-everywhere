@@ -4,7 +4,7 @@ Tags: cache, clear cache, flush cache, performance, admin bar
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.5
+Stable tag: 1.2.5.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.txt
 
@@ -148,6 +148,12 @@ https://youtu.be/wjCEGl2sSzQ
 1. Settings page and admin bar button.
 
 == Changelog ==
+= 1.2.5.1 =
+* Fix: The browser console showed "undefined" after progress messages when logging responses to the console was on
+* Update: IP addresses are no longer stored in the logs. The column is removed from existing log tables automatically
+* Tweak: Log Successful Clears is now off by default. Failures are always logged
+* Tweak: Added Logs tab details to the readme description and FAQ
+
 = 1.2.5 =
 * Fix: Clear All no longer freezes when an action returns an HTTP error such as a 500. It now records the error and continues to the next action
 * Fix: WP Engine cache clearing failed with a "Class not found" error. The call to the global WpeCommon class is now fully qualified.
