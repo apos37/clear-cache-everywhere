@@ -140,6 +140,9 @@ https://youtu.be/wjCEGl2sSzQ
 1. Settings page and admin bar button.
 
 == Changelog ==
+= 1.2.5 = // TODO:
+* Fix: WP Engine cache clearing failed with a "Class not found" error. The call to the global WpeCommon class is now fully qualified.
+
 = 1.2.4 =
 * Update: Added Seraphinite Accelerator integration
 * Note: Seraphinite processes cache deletion in the background, so it may take up to a minute to take effect

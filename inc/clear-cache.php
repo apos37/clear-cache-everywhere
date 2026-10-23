@@ -62,6 +62,10 @@ class Clear {
     private $clearing_actions_cache = null;
 
 
+
+    private $active_key = null;
+
+
     /**
      * Load on init
      */
@@ -74,6 +78,7 @@ class Clear {
         add_action( 'wp_ajax_cceverywhere_clear_ajax_action', [ $this, 'ajax_clear_action' ] );
         add_action( 'wp_ajax_cceverywhere_run_page_actions', [ $this, 'ajax_run_page_actions' ] );
         add_action( 'wp_ajax_cceverywhere_run_single_page_action', [ $this, 'ajax_run_single_page_action' ] );
+        add_action( 'wp_ajax_cceverywhere_log_client_error', [ $this, 'ajax_log_client_error' ] );
 
         // Enqueue script
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
@@ -498,29 +503,7 @@ class Clear {
     public function clear_fragment_cache() {
         global $wpdb;
 
-        // Only target actual fragment cache options, ignoring this plugin's own key
-        $prefixes = [
-            '_fragment_',       // standard fragment cache keys
-            '_fragment_cache_', // some plugins use this
-        ];
-
-        $like_clauses = [];
-        foreach ( $prefixes as $prefix ) {
-            $like_clauses[] = $wpdb->prepare( "option_name LIKE %s", '%' . $wpdb->esc_like( $prefix ) . '%' );
-        }
-
-        // Ignore this plugin's own fragment cache option
-        $not_like = $wpdb->prepare( "option_name NOT LIKE %s", '%clear_cache_everywhere_fragment_cache%' );
-
-        $query = "DELETE FROM {$wpdb->options} WHERE (" . implode( ' OR ', $like_clauses ) . ") AND {$not_like}";
-
-        $deleted = $wpdb->query( $query );
-
-        if ( false !== $deleted ) {
-            return [ 'status' => 'success', 'error_message' => null ];
-        }
-
-        return [ 'status' => 'fail', 'error_message' => 'Failed to clear fragment cache.' ];
+        return $this->delete_options_like( [ '%' . $wpdb->esc_like( '_fragment_' ) . '%' ] );
     } // End clear_fragment_cache()
 
 
@@ -532,17 +515,7 @@ class Clear {
     public function clear_rest_api_cache() {
         global $wpdb;
 
-        $deleted = $wpdb->query(
-            "DELETE FROM {$wpdb->options}
-            WHERE option_name LIKE '%rest\_cache%'
-            OR option_name LIKE '%api\_cache%'"
-        );
-
-        if ( false !== $deleted ) {
-            return [ 'status' => 'success', 'error_message' => null ];
-        }
-
-        return [ 'status' => 'fail', 'error_message' => 'REST API cache clear failed.' ];
+        return $this->delete_options_like( [ '%' . $wpdb->esc_like( 'rest_cache' ) . '%', '%' . $wpdb->esc_like( 'api_cache' ) . '%' ] );
     } // End clear_rest_api_cache()
 
 
@@ -974,11 +947,12 @@ class Clear {
      * @return array
      */
     public function clear_wp_engine() {
-        if ( ! method_exists( 'wpecommon', 'purge_varnish_cache' ) ) {
+        if ( ! method_exists( 'WpeCommon', 'purge_varnish_cache' ) ) {
             return [ 'status' => 'info', 'error_message' => 'WP Engine cache function not available.' ];
         }
 
-        wpecommon::purge_varnish_cache();
+        \WpeCommon::purge_varnish_cache();
+
         return [ 'status' => 'success', 'error_message' => null ];
     } // End clear_wp_engine()
 
@@ -1190,6 +1164,97 @@ class Clear {
 
 
     /**
+     * Save fatal errors that kill an AJAX clearing action
+     *
+     * @return void
+     */
+    public function capture_fatal() {
+        if ( ! $this->active_key ) {
+            return;
+        }
+
+        $error = error_get_last();
+        $fatal_types = [ E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR, E_RECOVERABLE_ERROR ];
+
+        if ( ! $error || ! in_array( $error[ 'type' ], $fatal_types, true ) ) {
+            return;
+        }
+
+        $message = sprintf( 'Fatal error: %s in %s on line %d', $error[ 'message' ], $error[ 'file' ], $error[ 'line' ] );
+
+        $this->update_clear_action( $this->active_key, [
+            'end'           => microtime( true ),
+            'status'        => 'fail',
+            'error_message' => $message
+        ] );
+
+        error_log( 'Clear Cache Everywhere [' . $this->active_key . ']: ' . $message );
+    } // End capture_fatal()
+
+
+    /**
+     * Save an HTTP-level failure reported by the browser
+     *
+     * @return void
+     */
+    public function ajax_log_client_error() {
+        check_ajax_referer( $this->nonce, 'nonce' );
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( __( 'Unauthorized', 'clear-cache-everywhere' ) );
+        }
+
+        $key         = sanitize_text_field( wp_unslash( $_POST[ 'key' ] ?? '' ) );
+        $http_status = absint( $_POST[ 'http_status' ] ?? 0 );
+        $detail      = sanitize_text_field( wp_unslash( $_POST[ 'detail' ] ?? '' ) );
+        $results     = get_option( $this->option_key, [] );
+        $current     = $results[ $key ][ 'status' ] ?? '';
+
+        if ( ! $key || ! in_array( $current, [ 'running', '' ], true ) ) {
+            wp_send_json_success();
+        }
+
+        $this->update_clear_action( $key, [
+            'end'           => microtime( true ),
+            'status'        => 'fail',
+            'error_message' => sprintf( 'HTTP %d from admin-ajax.php (no PHP result saved). Response: %s', $http_status, $detail )
+        ] );
+
+        wp_send_json_success();
+    } // End ajax_log_client_error()
+
+
+    /**
+     * Delete options matching LIKE patterns in batches, skipping this plugin's own options
+     *
+     * @param array $patterns LIKE patterns already passed through esc_like().
+     * @return array
+     */
+    public function delete_options_like( $patterns ) {
+        global $wpdb;
+
+        $own_hyphen = $wpdb->esc_like( CCEVERYWHERE__TEXTDOMAIN . '_' ) . '%';
+        $own_under  = $wpdb->esc_like( 'clear_cache_everywhere_' ) . '%';
+        $sql        = "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s AND option_name NOT LIKE %s AND option_name NOT LIKE %s LIMIT 500";
+
+        foreach ( $patterns as $pattern ) {
+            do {
+                $deleted = $wpdb->query( $wpdb->prepare( $sql, $pattern, $own_hyphen, $own_under ) );
+
+                if ( false === $deleted ) {
+                    return [ 'status' => 'fail', 'error_message' => sprintf( 'Database error: %s | Pattern: %s', $wpdb->last_error ?: 'unknown', $pattern ) ];
+                }
+            } while ( 500 === $deleted );
+        }
+
+        wp_cache_delete( 'alloptions', 'options' );
+        wp_cache_delete( 'notoptions', 'options' );
+
+        return [ 'status' => 'success', 'error_message' => null ];
+    } // End delete_options_like()
+
+
+    /**
      * Run a single AJAX action
      */
     public function ajax_clear_action() {
@@ -1247,14 +1312,19 @@ class Clear {
         do_action( 'cceverywhere_before_clear', $action );
 
         // Execute
+        $this->active_key = $key;
+        register_shutdown_function( [ $this, 'capture_fatal' ] );
+
         try {
             $result = call_user_func( $callback );
             $status = $result[ 'status' ] ?? 'fail';
             $error  = $result[ 'error_message' ] ?? null;
         } catch ( \Throwable $e ) {
             $status = 'fail';
-            $error  = $e->getMessage();
+            $error  = sprintf( '%s: %s in %s on line %d', get_class( $e ), $e->getMessage(), $e->getFile(), $e->getLine() );
         }
+
+        $this->active_key = null;
 
         // Update final
         $end_time = microtime( true );
