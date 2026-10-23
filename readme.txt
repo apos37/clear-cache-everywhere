@@ -18,10 +18,11 @@ Clear all cache sources in one click from the WordPress admin bar, including WP 
 
 - **One-Click Cache Clearing:** Clears multiple cache layers across WordPress, server, and browser.
 - **Individual Clear Actions:** Run specific cache clearing actions independently.
+- **Status at a Glance:** Every action shows when it last ran and whether it succeeded, so you can see what was skipped or failed.
 - **Admin Bar Access:** Quick purge button in the WordPress admin bar (eraser icon).
 - **Hosting Integration:** Supports clearing hosting-level cache via configurable purge URL.
 - **Third-Party Support:** Clears cache for supported plugins and services.
-- **Detailed Logging:** Logs execution time for each action.
+- **Detailed Logging:** A Logs tab records every failed clear with the HTTP status, PHP error, file and line, and server environment details. Successful clears can be logged too, with an automatic cleanup period.
 - **Developer Hooks:** Add additional cache clearing actions via developer hooks.
 
 The following clearing actions are available:
@@ -89,7 +90,6 @@ This plugin is ideal for developers, content managers, and site owners who need 
 It executes multiple cache-clearing actions across WordPress core, object caching systems, server-level caching, browser cache, and supported third-party plugins. Individual actions can be triggered independently.
 
 = Why does it take so long to clear the cache sometimes? =
-
 Clearing cache is not just a single action. When you click “Clear All,” the plugin may be flushing multiple cache layers: object cache, persistent cache (Redis/Memcached), OPcache, reverse proxies like Varnish, REST caches, transients, sessions, and third-party integrations. Each layer operates differently and may require disk I/O, memory resets, or network requests.
 
 On larger sites, clearing cache can take longer because:
@@ -127,7 +127,16 @@ https://pluginrx.com/docs/plugin/clear-cache-everywhere/
 = Is there a function to trigger clearing cache everywhere? =
 Yes! A helper function is available for you to use: `cceverywhere_clear_all( $log_results = false )`. 
 
-The function returns the results of the cache clearing processing. Optionally, you can log the results by setting the `$log_results` parameter to `true`. This will log the results to the debug log.
+The function returns the results of the cache clearing processing. Optionally, you can log the results by setting the `$log_results` parameter to `true`. This will log the results to the debug log. Results from this function also appear in the Logs tab, labeled "Helper Function."
+
+= Where can I see what failed? =
+Open the **Logs** tab in the plugin header. Failures are always logged with the action, where it was triggered from (settings page, admin bar, individual button, URL, cron, or helper function), the duration, and the error. HTTP errors such as a 500 include the response, and PHP fatals include the file and line.
+
+= Are successful clears logged? =
+Not by default. Turn on **Log Successful Clears** in the Logs settings at the bottom of the Settings tab if you want a full history. Logs are deleted automatically after the number of days set in **Clear Logs After (Days)**, which defaults to 30. You can also delete entries manually from the Logs tab.
+
+= What does Log Responses to the Browser Console do? =
+It prints each clearing request's response to your browser's developer console, which is useful for troubleshooting and verifying that everything has actually been cleared while on the front-end. It is on by default and can be turned off in the Logs settings.
 
 = Where can I request features and get further support? =
 We recommend using our [website support forum](https://pluginrx.com/support/plugin/clear-cache-everywhere/) as the primary method for requesting features and getting help. You can also reach out via our [Discord support server](https://discord.gg/3HnzNEJVnR) or the [WordPress.org support forum](https://wordpress.org/support/plugin/clear-cache-everywhere/), but please note that WordPress.org doesn’t always notify us of new posts, so it’s not ideal for time-sensitive issues.
