@@ -142,7 +142,7 @@ It prints each clearing request's response to your browser's developer console, 
 We recommend using our [website support forum](https://pluginrx.com/support/plugin/clear-cache-everywhere/) as the primary method for requesting features and getting help. You can also reach out via our [Discord support server](https://discord.gg/3HnzNEJVnR) or the [WordPress.org support forum](https://wordpress.org/support/plugin/clear-cache-everywhere/), but please note that WordPress.org doesn’t always notify us of new posts, so it’s not ideal for time-sensitive issues.
 
 == Demo ==
-https://youtu.be/wjCEGl2sSzQ
+https://youtu.be/C5ySHT1jyjU
 
 == Screenshots ==
 1. Settings page and admin bar button.
